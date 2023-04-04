@@ -1,0 +1,9 @@
+train: ../GigaSet/images/train/
+val: ../GigaSet/images/test/
+test: ../GigaSet/images/test/
+
+# number of classes
+nc: 1
+
+# class names
+names: ["hand"]
