@@ -4,8 +4,11 @@ import os
 if __name__ == '__main__':
     path = os.getcwd()
 
-    # Load a model
-    model = YOLO(f'{path}/runs/detect/train6/weights/best.pt')  # load a custom model
+    print('Loading detection model...')
+    nnsize = 'm' # 'n' for nano, 's' for small, 'm' for medium
+
+    # Load a custom model
+    model = YOLO(f'{path}/data/yolov8{nnsize}.pt')
 
     # Validate the model
     metrics = model.val()  # no arguments needed, dataset and settings remembered
