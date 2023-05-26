@@ -13,6 +13,7 @@ set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 # !CUDA
 
 # OpenCV
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake-modules)
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 # !OpenCV

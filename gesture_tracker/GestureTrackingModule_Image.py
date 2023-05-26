@@ -7,18 +7,7 @@ import os
 import cv2
 from time import time
 
-path = os.getcwd()
-print('Opening camera...')
-vid = cv2.VideoCapture(0)
-
-model_path = f'{path}/gesture_tracker/hand_landmarker.task'
-
-MARGIN = 10  # pixels
-FONT_SIZE = 1
-FONT_THICKNESS = 1
-HANDEDNESS_TEXT_COLOR = (0, 255, 255) # RGB
-
-def draw_landmarks_on_image(rgb_image, detection_result):
+def draw_landmarks_on_image(rgb_image, detection_result, MARGIN, FONT_SIZE, HANDEDNESS_TEXT_COLOR, FONT_THICKNESS):
     hand_landmarks_list = detection_result.hand_landmarks
     handedness_list = detection_result.handedness
     annotated_image = np.copy(rgb_image)
@@ -54,48 +43,70 @@ def draw_landmarks_on_image(rgb_image, detection_result):
 
     return annotated_image
 
-with open(model_path, 'rb') as f:
-    model = f.read()
+def gesture_detection_init(path):
 
-BaseOptions = python.BaseOptions(model_asset_buffer=model)
-HandLandmarker = mp.tasks.vision.HandLandmarker
-HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
+    model_path = f'{path}/gesture_tracker/hand_landmarker.task'
 
-options = HandLandmarkerOptions(
-    base_options=BaseOptions,
-    num_hands=2)
+    MARGIN = 10  # pixels
+    FONT_SIZE = 1
+    FONT_THICKNESS = 1
+    HANDEDNESS_TEXT_COLOR = (0, 255, 255) # RGB
+    gest_format = (MARGIN, FONT_SIZE, HANDEDNESS_TEXT_COLOR, FONT_THICKNESS)
 
-prev_timestamp = time()
-font = cv2.FONT_HERSHEY_SIMPLEX
-org = (50, 50)
-fontScale = 1
-color = (0, 255, 255)
-# Line thickness of 2 px
-thickness = 2
+    with open(model_path, 'rb') as f:
+        model = f.read()
 
-with HandLandmarker.create_from_options(options) as landmarker:
-    while(True):
-        # Capture the video frame by frame
-        ret, frame = vid.read()
+    BaseOptions = python.BaseOptions(model_asset_buffer=model)
+    HandLandmarker = mp.tasks.vision.HandLandmarker
+    HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
 
-        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
-        
-        detection_result = landmarker.detect(mp_image)
-        annotated_image = draw_landmarks_on_image(mp_image.numpy_view(), detection_result)
-        
-        # FPS
-        timestamp = time()
-        fps = '{:.0f}'.format(1/(timestamp - prev_timestamp))
-        prev_timestamp = timestamp
-        print(f'FPS: {fps}')
-        annotated_image = cv2.putText(annotated_image, fps, org, font, 
-                        fontScale, color, thickness, cv2.LINE_AA)
+    options = HandLandmarkerOptions(
+        base_options=BaseOptions,
+        num_hands=2)
 
-        cv2.imshow('frame', annotated_image)
+    return (HandLandmarker, options, gest_format)
 
-        # the 'q' button is quitting button
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+def detect_gesture(gest_format):
+
+    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
+    
+    detection_result = landmarker.detect(mp_image)
+    annotated_image = draw_landmarks_on_image(mp_image.numpy_view(), detection_result, *gest_format)
+    
+    # FPS
+    global prev_timestamp
+    timestamp = time()
+    fps = '{:.0f}'.format(1/(timestamp - prev_timestamp))
+    prev_timestamp = timestamp
+    print(f'FPS: {fps}')
+    annotated_image = cv2.putText(annotated_image, fps, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 
+                    1, (0, 255, 255), 2, cv2.LINE_AA)
+    
+    return annotated_image
+
+if __name__ == '__main__':
+
+    path = os.getcwd()
+
+    prev_timestamp = time()
+
+    print('Opening camera...')
+    vid = cv2.VideoCapture(0)
+
+    HandLandmarker, options, gest_format = gesture_detection_init(path)
+
+    with HandLandmarker.create_from_options(options) as landmarker:
+        while(True):
+            # Capture the video frame by frame
+            ret, frame = vid.read()
+
+            annotated_image = detect_gesture(gest_format)
+
+            cv2.imshow('frame', annotated_image)
+
+            # the 'q' button is quitting button
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
 
     # After the loop release the cap object
     vid.release()

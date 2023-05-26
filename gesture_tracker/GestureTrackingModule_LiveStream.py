@@ -5,43 +5,9 @@ from mediapipe.framework.formats import landmark_pb2
 import numpy as np
 import os
 import cv2
-import time
+from time import time
 
-path = os.getcwd()
-print('Opening camera...')
-vid = cv2.VideoCapture(0)
-prev_timestamp = time.time()
-
-model_path = f'{path}/gesture_tracker/hand_landmarker.task'
-
-HandLandmarkerResult = mp.tasks.vision.HandLandmarkerResult
-
-# Create a hand landmarker instance with the live stream mode:
-def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp_ms: int):
-    
-    annotated_frame = draw_landmarks_on_image(output_image.numpy_view(), result)
-    
-    # FPS
-    global prev_timestamp
-    fps = '{:.0f}'.format(1/((timestamp_ms - prev_timestamp)/1000))
-    prev_timestamp = timestamp_ms
-    print(f'FPS: {fps}')
-
-    annotated_frame = cv2.putText(annotated_frame, fps, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 
-                    1, (0, 255, 255), 2, cv2.LINE_AA)
-    
-    # Display the resulting frame
-    cv2.imshow('frame', annotated_frame)
-
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        return 0
-
-MARGIN = 10  # pixels
-FONT_SIZE = 1
-FONT_THICKNESS = 1
-HANDEDNESS_TEXT_COLOR = (0, 255, 255) # RGB
-
-def draw_landmarks_on_image(rgb_image, detection_result):
+def draw_landmarks_on_image(rgb_image, detection_result, MARGIN, FONT_SIZE, HANDEDNESS_TEXT_COLOR, FONT_THICKNESS):
     hand_landmarks_list = detection_result.hand_landmarks
     handedness_list = detection_result.handedness
     annotated_image = np.copy(rgb_image)
@@ -77,34 +43,84 @@ def draw_landmarks_on_image(rgb_image, detection_result):
 
     return annotated_image
 
-with open(model_path, 'rb') as f:
-    model = f.read()
+def gesture_detection_init(path):
+    print("Loading gesture detection model...")
+    model_path = f'{path}/gesture_tracker/hand_landmarker.task'
 
-BaseOptions = python.BaseOptions(model_asset_buffer=model)
-HandLandmarker = mp.tasks.vision.HandLandmarker
-HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
-VisionRunningMode = mp.tasks.vision.RunningMode
 
-options = HandLandmarkerOptions(
-    base_options=BaseOptions,
-    num_hands=2,
-    running_mode=VisionRunningMode.LIVE_STREAM,
-    result_callback=print_result)
-with HandLandmarker.create_from_options(options) as landmarker:
-    while(True):
-        # Capture the video frame by frame
-        ret, frame = vid.read()
+    MARGIN = 10  # pixels
+    FONT_SIZE = 1
+    FONT_THICKNESS = 1
+    HANDEDNESS_TEXT_COLOR = (0, 255, 255) # RGB
+    gest_format = (MARGIN, FONT_SIZE, HANDEDNESS_TEXT_COLOR, FONT_THICKNESS)
 
-        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
-        timestamp = int(time.time() * 1000)
+    with open(model_path, 'rb') as f:
+        model = f.read()
+
+    HandLandmarkerResult = mp.tasks.vision.HandLandmarkerResult
+    BaseOptions = python.BaseOptions(model_asset_buffer=model)
+    HandLandmarker = mp.tasks.vision.HandLandmarker
+    HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
+    VisionRunningMode = mp.tasks.vision.RunningMode
+
+    # Create a hand landmarker instance with the live stream mode:
+    def print_result(result: HandLandmarkerResult, output_image: mp.Image, timestamp_ms: int):
         
-        landmarker.detect_async(mp_image, timestamp)
+        annotated_frame = draw_landmarks_on_image(output_image.numpy_view(), result, *gest_format)
         
-        # the 'q' button is quitting button
+        # FPS
+        global prev_timestamp
+        fps = '{:.0f}'.format(1/((timestamp_ms - prev_timestamp)/1000))
+        prev_timestamp = timestamp_ms
+        print(f'FPS: {fps}')
+
+        annotated_frame = cv2.putText(annotated_frame, fps, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 
+                        1, (0, 255, 255), 2, cv2.LINE_AA)
+        
+        # Display the resulting frame
+        cv2.imshow('frame', annotated_frame)
+
         if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+            return 0    
 
-    # After the loop release the cap object
-    vid.release()
-    # Destroy all the windows
-    cv2.destroyAllWindows()
+    options = HandLandmarkerOptions(
+        base_options=BaseOptions,
+        num_hands=2,
+        running_mode=VisionRunningMode.LIVE_STREAM,
+        result_callback=print_result)
+        
+    return (HandLandmarker, options)
+
+def detect_gesture(landmarker, frame):
+    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
+    timestamp = int(time() * 1000)
+    
+    landmarker.detect_async(mp_image, timestamp)
+
+
+if __name__ == '__main__':
+
+    path = os.getcwd()
+    
+    prev_timestamp = time()
+
+    print('Opening camera...')
+    vid = cv2.VideoCapture(0)
+
+    HandLandmarker, options = gesture_detection_init(path)
+
+    with HandLandmarker.create_from_options(options) as landmarker:
+        while(True):
+            # Capture the video frame by frame
+            ret, frame = vid.read()
+
+            detect_gesture(landmarker, frame)
+            
+            # the 'q' button is quitting button
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
+        # After the loop release the cap object
+        vid.release()
+        # Destroy all the windows
+        cv2.destroyAllWindows()
