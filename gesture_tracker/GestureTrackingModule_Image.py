@@ -45,7 +45,7 @@ def draw_landmarks_on_image(rgb_image, detection_result, MARGIN, FONT_SIZE, HAND
 
 def gesture_detection_init(path):
 
-    model_path = f'{path}/gesture_tracker/hand_landmarker.task'
+    model_path = f'{path}\\gesture_tracker\\hand_landmarker.task'
 
     MARGIN = 10  # pixels
     FONT_SIZE = 1
@@ -66,7 +66,7 @@ def gesture_detection_init(path):
 
     return (HandLandmarker, options, gest_format)
 
-def detect_gesture(gest_format):
+def detect_gesture(landmarker, gest_format, frame, prev_timestamp):
 
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
     
@@ -74,7 +74,6 @@ def detect_gesture(gest_format):
     annotated_image = draw_landmarks_on_image(mp_image.numpy_view(), detection_result, *gest_format)
     
     # FPS
-    global prev_timestamp
     timestamp = time()
     fps = '{:.0f}'.format(1/(timestamp - prev_timestamp))
     prev_timestamp = timestamp
@@ -82,7 +81,7 @@ def detect_gesture(gest_format):
     annotated_image = cv2.putText(annotated_image, fps, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 
                     1, (0, 255, 255), 2, cv2.LINE_AA)
     
-    return annotated_image
+    return annotated_image, prev_timestamp
 
 if __name__ == '__main__':
 
@@ -100,7 +99,7 @@ if __name__ == '__main__':
             # Capture the video frame by frame
             ret, frame = vid.read()
 
-            annotated_image = detect_gesture(gest_format)
+            annotated_image, prev_timestamp = detect_gesture(landmarker, gest_format, frame, prev_timestamp)
 
             cv2.imshow('frame', annotated_image)
 

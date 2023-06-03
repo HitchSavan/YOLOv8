@@ -28,16 +28,19 @@ def yolo(model, format, frame, prev_timestamp):
     # Predict with the model
     results = model(frame)  # predict on an image
     boxes = results[0].boxes
+    crop_coords = []
     for box in boxes:
         xyxy = tuple([int(x) for x in box.xyxy[0]])
         frame = cv2.rectangle(frame, (xyxy[0], xyxy[1]), (xyxy[2], xyxy[3]), color=(255, 0, 0), thickness=2)
+        crop_coords.append(xyxy)
 
     # FPS
-    timestamp = time()
-    fps = '{:.0f}'.format(1/(timestamp - prev_timestamp))
-    prev_timestamp = timestamp
-    frame = cv2.putText(frame, fps, *format, cv2.LINE_AA)
-    return (frame, prev_timestamp)
+    if prev_timestamp:
+        timestamp = time()
+        fps = '{:.0f}'.format(1/(timestamp - prev_timestamp))
+        prev_timestamp = timestamp
+        frame = cv2.putText(frame, fps, *format, cv2.LINE_AA)
+    return (frame, prev_timestamp, crop_coords)
 
 if __name__ == '__main__':
 
@@ -54,10 +57,15 @@ if __name__ == '__main__':
         # Capture the video frame by frame
         ret, frame = vid.read()
 
-        frame, prev_timestamp = yolo(model, yolo_format, frame, prev_timestamp)
+        frame, prev_timestamp, crop_coords = yolo(model, yolo_format, frame, prev_timestamp)
 
-        # Display the resulting frame
-        cv2.imshow('frame', frame)
+        if crop_coords:
+            for box in crop_coords:
+                annotated_image = frame[box[1]:box[3], box[0]:box[2]]
+                cv2.imshow('frame', annotated_image)
+        else:
+            # Display the resulting frame
+            cv2.imshow('frame', frame)
 
         # the 'q' button is quitting button
         if cv2.waitKey(1) & 0xFF == ord('q'):
