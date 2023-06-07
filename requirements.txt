@@ -2,6 +2,7 @@
 # Usage: pip install -r requirements.txt
 
 # Base ----------------------------------------
+# Additionally install CUDA v11.7
 matplotlib>=3.2.2
 numpy>=1.21.6
 opencv-python>=4.6.0
