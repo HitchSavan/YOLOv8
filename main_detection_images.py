@@ -2,7 +2,7 @@ import sys
 import os
 
 path = os.getcwd()
-sys.path.insert(0, f'{path}\\data')
+sys.path.insert(0, f'{path}\\hand_detector')
 sys.path.insert(0, f'{path}\\gesture_tracker')
 
 from yolo_detect import *
