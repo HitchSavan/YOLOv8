@@ -7,7 +7,7 @@ from mediapipe_model_maker import gesture_recognizer
 import matplotlib.pyplot as plt
 
 path = os.getcwd()
-dataset_path = path + '\\gesture_recognizer\\SLOVO_sign_dataset\\slovo\\letters'
+dataset_path = path[:path.rindex('\\')] + '\\Datasets\\SLOVO_sign_dataset\\slovo\\letters\\'
 
 data = gesture_recognizer.Dataset.from_folder(
     dirname=dataset_path,

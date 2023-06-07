@@ -13,4 +13,4 @@ if __name__ == "__main__":
     model = YOLO(f'yolov8{nnsize}.pt')
 
     # Run MODE mode using the custom arguments ARGS (guess TASK)
-    model.train(data=f'{path}/data/hand.yaml', epochs=100, imgsz=640, batch=batch_size)
+    model.train(data=f'{path}/hand_detector/hand.yaml', epochs=100, imgsz=640, batch=batch_size)

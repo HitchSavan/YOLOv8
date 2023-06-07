@@ -39,8 +39,8 @@ def copy_frames(files, filename, text, path_to):
 path = os.getcwd()
 path_test = path[:path.rindex('\\')] + '\\Datasets\\SLOVO_sign_dataset\\slovo\\test\\'
 path_train = path[:path.rindex('\\')] + '\\Datasets\\SLOVO_sign_dataset\\slovo\\train\\'
-path_letters = path + '\\gesture_recognizer\\SLOVO_sign_dataset\\slovo\\letters\\'
-path_words = path + '\\gesture_recognizer\\SLOVO_sign_dataset\\slovo\\words\\'
+path_letters = path[:path.rindex('\\')] + '\\Datasets\\SLOVO_sign_dataset\\slovo\\letters\\'
+path_words = path[:path.rindex('\\')] + '\\Datasets\\SLOVO_sign_dataset\\slovo\\words\\'
 
 annotations = pd.read_csv(path[:path.rindex('\\')] + '\\Datasets\\SLOVO_sign_dataset\\slovo\\annotations.csv', sep='\t')
 

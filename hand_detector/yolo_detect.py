@@ -20,7 +20,7 @@ def yolo_init(path):
     thickness = 2
 
     # Load a custom model
-    model = YOLO(f'{path}/data/yolov8{nnsize}.pt')
+    model = YOLO(f'{path}/hand_detector/yolov8{nnsize}.pt')
 
     return (model, org, font, fontScale, color, thickness)
 

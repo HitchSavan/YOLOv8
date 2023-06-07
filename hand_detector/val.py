@@ -8,7 +8,7 @@ if __name__ == '__main__':
     nnsize = 'm' # 'n' for nano, 's' for small, 'm' for medium
 
     # Load a custom model
-    model = YOLO(f'{path}/data/yolov8{nnsize}.pt')
+    model = YOLO(f'{path}/hand_detector/yolov8{nnsize}.pt')
 
     # Validate the model
     metrics = model.val()  # no arguments needed, dataset and settings remembered
