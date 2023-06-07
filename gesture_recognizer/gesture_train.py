@@ -3,11 +3,13 @@ import tensorflow as tf
 assert tf.__version__.startswith('2')
 
 from mediapipe_model_maker import gesture_recognizer
-
 import matplotlib.pyplot as plt
 
 path = os.getcwd()
-dataset_path = path[:path.rindex('\\')] + '\\Datasets\\SLOVO_sign_dataset\\slovo\\letters\\'
+try:
+    dataset_path = path[:path.rindex('/')] + '/Datasets/SLOVO_sign_dataset/slovo/letters/'
+except:
+    dataset_path = path[:path.rindex('\\')] + '\\Datasets\\SLOVO_sign_dataset\\slovo\\letters\\'
 
 data = gesture_recognizer.Dataset.from_folder(
     dirname=dataset_path,
