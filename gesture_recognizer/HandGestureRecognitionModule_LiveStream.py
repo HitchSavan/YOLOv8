@@ -58,7 +58,7 @@ def recognize_gesture(recognizer, frame):
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
     timestamp = int(time() * 1000)
     
-    recognizer.reconize_async(mp_image, timestamp)
+    recognizer.recognize_async(mp_image, timestamp)
 
 
 if __name__ == '__main__':
