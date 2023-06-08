@@ -14,7 +14,7 @@ def yolo_init(path):
     org = (50, 50)
     # fontScale
     fontScale = 1
-    # Blue color in BGR
+    # Yellow color in BGR
     color = (0, 255, 255)
     # Line thickness of 2 px
     thickness = 2
