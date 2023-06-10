@@ -45,7 +45,10 @@ def draw_landmarks_on_image(rgb_image, detection_result, MARGIN, FONT_SIZE, HAND
 
 def gesture_detection_init(path):
 
-    model_path = f'{path}\\gesture_tracker\\hand_landmarker.task'
+    try:
+        model_path = f'{path}/gesture_tracker/hand_landmarker.task'
+    except:
+        model_path = f'{path}\\gesture_tracker\\hand_landmarker.task'
 
     MARGIN = 10  # pixels
     FONT_SIZE = 1
