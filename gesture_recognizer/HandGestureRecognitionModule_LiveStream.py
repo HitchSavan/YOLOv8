@@ -167,10 +167,8 @@ def gesture_recognizer_init(path):
         global fig
         global ax
 
-        display_image(output_image.numpy_view(), results, fig, ax)
-
         # Display the result
-        # display_image_with_gestures_and_hand_landmarks(output_image, results)
+        display_image_with_gestures_and_hand_landmarks(output_image, results)
 
     options = GestureRecognizerOptions(
         base_options=BaseOptions(model_asset_path=model_path),
