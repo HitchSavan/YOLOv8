@@ -167,10 +167,8 @@ def gesture_recognizer_init(path):
         global fig
         global ax
 
-        display_image(output_image.numpy_view(), results, fig, ax)
-
         # Display the result
-        # display_image_with_gestures_and_hand_landmarks(output_image, results)
+        display_image_with_gestures_and_hand_landmarks(output_image, results)
 
     options = GestureRecognizerOptions(
         base_options=BaseOptions(model_asset_path=model_path),
@@ -183,7 +181,7 @@ def recognize_gesture(recognizer, frame):
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
     timestamp = int(time() * 1000)
     
-    recognizer.reconize_async(mp_image, timestamp)
+    recognizer.recognize_async(mp_image, timestamp)
 
 
 if __name__ == '__main__':
