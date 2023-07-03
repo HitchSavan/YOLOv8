@@ -16,7 +16,7 @@ print('Opening camera...')
 vid = cv2.VideoCapture(0)
 
 model, *yolo_format = yolo_init(path)
-HandLandmarker, options, gest_format = gesture_detection_init(path)
+HandLandmarker, options, gest_format = gesture_recognizer_init(path)
 
 with HandLandmarker.create_from_options(options) as landmarker:
     while(True):
@@ -29,10 +29,10 @@ with HandLandmarker.create_from_options(options) as landmarker:
             for box in crop_coords:
                 annotated_image = frame
                 annotated_image = np.array(frame[box[1]:box[3], box[0]:box[2]])
-                annotated_image, prev_timestamp = detect_gesture(landmarker, gest_format, annotated_image, prev_timestamp)
+                annotated_image, prev_timestamp = recognize_gesture(landmarker, gest_format, annotated_image, prev_timestamp)
                 cv2.imshow('frame', annotated_image)
         else:
-            annotated_image, prev_timestamp = detect_gesture(landmarker, gest_format, frame, prev_timestamp)
+            annotated_image, prev_timestamp = recognize_gesture(landmarker, gest_format, frame, prev_timestamp)
             cv2.imshow('frame', annotated_image)
 
         # the 'q' button is quitting button
