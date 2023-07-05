@@ -4,17 +4,16 @@
 # Base ----------------------------------------
 # Additionally install CUDA v11.7
 matplotlib>=3.2.2
-numpy>=1.24.3
+# numpy>=1.24.3
 opencv-python>=4.6.0
 Pillow>=7.1.2
 PyYAML>=5.3.1
 requests>=2.31.0
-scipy>=1.4.1
 torch>=2.0.1
 torchvision>=0.8.1
 tqdm>=4.64.0
-tensorflow>=2.12.0
 mediapipe_model_maker
+ultralytics
 
 # Logging -------------------------------------
 # tensorboard>=2.4.1
