@@ -6,7 +6,8 @@ from time import time
 def yolo_init(path):
 
     print('Loading YOLO detection model...')
-    nnsize = 'm' # 'n' for nano, 's' for small, 'm' for medium
+    # 'n' for nano, 's' for small, 'm' for medium
+    nnsize = 'm'
 
     # font
     font = cv2.FONT_HERSHEY_SIMPLEX

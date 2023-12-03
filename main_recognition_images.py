@@ -5,8 +5,8 @@ path = os.getcwd()
 sys.path.insert(0, f'{path}\\hand_detector')
 sys.path.insert(0, f'{path}\\gesture_recognizer')
 
-from yolo_detect import *
-from HandGestureRecognitionModule_Image import *
+from hand_detector.yolo_detect import *
+from gesture_recognizer.HandGestureRecognitionModule_Image import *
 
 path = os.getcwd()
 
