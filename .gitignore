@@ -114,6 +114,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.ubuEnv/
 
 # Spyder project settings
 .spyderproject
