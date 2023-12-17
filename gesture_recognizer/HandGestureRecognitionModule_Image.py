@@ -1,25 +1,76 @@
+from math import sqrt
 import os
 from time import time
-
 import cv2
 import mediapipe as mp
 import numpy as np
+from collections import deque
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
-from mediapipe.tasks import python
 
+class Point:
+    def __init__(self, _x, _y):
+        self.x = _x
+        self.y = _y
+
+    def __add__(self, _pt):
+        return self.x + _pt.x, self.y + _pt.y
+    
+    def __gt__(self, _pt):
+        return True if self.x > _pt.x else (self.y > _pt.y if self.x == _pt.x else False)
+    
+    def __lt__(self, _pt):
+        return self.__gt__(_pt, self)
+
+class Vector:
+    start = Point(0, 0)
+    end = Point(0, 0)
+    coords = Point(0, 0)
+
+    def __init__(self, _start, _end):
+        self.start = _start
+        self.end = _end
+        self.coords = _end - _start
+
+    # codirectional vectors
+    def __eq__(self, other):
+        if ((self.coords.x / other.coords.x) == (self.coords.y / other.coords.y)):
+            return 0 < (self.coords.x * other.coords.x + self.coords.y * other.coords.y)
+        return False
+
+    def distance(r):
+        return sqrt(pow(coords.x - r.coords.x, 2) + pow(coords.y - r.coords.y, 2))
+
+    def length():
+        return sqrt(pow(coords.x, 2) + pow(coords.y, 2))
+
+    # if positive --> <90 degrees
+    def getScalarMult(r):
+        return (coords.x * r.coords.x) + (coords.y * r.coords.y)
+
+    # if cos > 0.7 --> <45 degrees
+    def getCos(r):
+        return (getScalarMult(r) / (length() * r.length()))
+
+    def update(newCoords):
+        self.coords = newCoords
+        self.end = self.start + newCoords
 
 def draw_landmarks_on_image(rgb_image, recogntion_result, MARGIN, FONT_SIZE, HANDEDNESS_TEXT_COLOR, FONT_THICKNESS):
     try:
         print(f'gesture recognition result: Accuracy: {recogntion_result.gestures[0][0].score}, letter: {recogntion_result.gestures[0][0].category_name}')
         letter = recogntion_result.gestures[0][0].category_name
+        score = recogntion_result.gestures[0][0].score
     except:
         print('No hands detected')
         letter = ''
+        score = 0
     
     hand_landmarks_list = recogntion_result.hand_landmarks
     handedness_list = recogntion_result.handedness
     annotated_image = np.copy(rgb_image)
+
+    position = None
 
     # Loop through the detected hands to visualize.
     for idx in range(len(hand_landmarks_list)):
@@ -49,8 +100,11 @@ def draw_landmarks_on_image(rgb_image, recogntion_result, MARGIN, FONT_SIZE, HAN
         cv2.putText(annotated_image, f"{handedness[0].category_name}",
                     (text_x, text_y), cv2.FONT_HERSHEY_DUPLEX,
                     FONT_SIZE, HANDEDNESS_TEXT_COLOR, FONT_THICKNESS, cv2.LINE_AA)
+        
+        position = (int(sum([coord * width for coord in x_coordinates])/len([coord * width for coord in x_coordinates])),
+                    int(sum([coord * height for coord in y_coordinates])/len([coord * height for coord in y_coordinates])))
 
-    return annotated_image, letter
+    return annotated_image, letter, position, score
 
 def gesture_recognizer_init(path):
 
@@ -84,7 +138,7 @@ def recognize_gesture(recognizer, gest_format, frame, prev_timestamp):
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
     
     recognition_result = recognizer.recognize(mp_image)
-    annotated_image, letter = draw_landmarks_on_image(mp_image.numpy_view(), recognition_result, *gest_format)
+    annotated_image, letter, position, score = draw_landmarks_on_image(mp_image.numpy_view(), recognition_result, *gest_format)
     
     # FPS
     timestamp = time()
@@ -93,10 +147,8 @@ def recognize_gesture(recognizer, gest_format, frame, prev_timestamp):
     print(f'FPS: {fps}')
     annotated_image = cv2.putText(annotated_image, fps, (50, 50), cv2.FONT_HERSHEY_COMPLEX, 
                     1, (0, 255, 255), 2, cv2.LINE_AA)
-    annotated_image = cv2.putText(annotated_image, letter, (50, 100), cv2.FONT_HERSHEY_COMPLEX, 
-                    1, (0, 255, 255), 2, cv2.LINE_AA)
     
-    return annotated_image, prev_timestamp
+    return annotated_image, prev_timestamp, position, letter, score
 
 if __name__ == '__main__':
 
@@ -109,13 +161,56 @@ if __name__ == '__main__':
 
     GestureRecognizer, options, gest_format = gesture_recognizer_init(path)
 
+    buffer_size = 6
+    movement_buffer = deque(maxlen=buffer_size)
+    movement_frames_loss = 0
+    Q = deque(maxlen=15)
+    labels = deque(maxlen=Q.maxlen)
+    labels_dict = {}
+    labels_score_dict = {}
+
     with GestureRecognizer.create_from_options(options) as recognizer:
         while(True):
             # Capture the video frame by frame
             ret, frame = vid.read()
 
-            annotated_image, prev_timestamp = recognize_gesture(recognizer, gest_format, frame, prev_timestamp)
+            if not ret:
+                continue
 
+            annotated_image, prev_timestamp, position, letter, score = recognize_gesture(recognizer, gest_format, frame, prev_timestamp)
+
+            labels.append(letter)
+            if not labels_score_dict.__contains__(letter):
+                labels_score_dict[letter] = score
+            else:
+                labels_score_dict[letter] += score
+
+            unique, counts = np.unique(labels, return_counts=True)
+            labels_dict = dict(zip(unique, counts))
+
+            Q.append(labels_score_dict[letter] / labels_dict[letter])
+
+            results = np.array(Q)
+            i = np.argmax(results)
+            
+            result_letter = labels[i]
+
+            if position is not None:
+                movement_buffer.append(position)
+                movement_frames_loss = 0
+
+            else:
+                movement_frames_loss += 1
+
+            if movement_frames_loss > 3:
+                movement_buffer.clear()
+
+            if len(movement_buffer) > 2:
+                for pos in range(1, len(movement_buffer)):
+                    cv2.arrowedLine(annotated_image, (movement_buffer[pos-1][0], movement_buffer[pos-1][1]),
+                                    (movement_buffer[pos][0], movement_buffer[pos][1]), (255, 0, 0), 3)
+
+            annotated_image = cv2.putText(annotated_image, result_letter, (50, 100), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2, cv2.LINE_AA)
             cv2.imshow('frame', annotated_image)
 
             # the 'q' button is quitting button
