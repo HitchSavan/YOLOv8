@@ -14,7 +14,10 @@ class Point:
         self.y = _y
 
     def __add__(self, _pt):
-        return self.x + _pt.x, self.y + _pt.y
+        return Point(self.x + _pt.x, self.y + _pt.y)
+
+    def __sub__(self, _pt):
+        return Point(self.x - _pt.x, self.y - _pt.y)
     
     def __gt__(self, _pt):
         return True if self.x > _pt.x else (self.y > _pt.y if self.x == _pt.x else False)
@@ -23,14 +26,15 @@ class Point:
         return self.__gt__(_pt, self)
 
 class Vector:
-    start = Point(0, 0)
-    end = Point(0, 0)
-    coords = Point(0, 0)
-
     def __init__(self, _start, _end):
         self.start = _start
         self.end = _end
         self.coords = _end - _start
+
+    def __init__(self, _start_x, _start_y, _end_x, _end_y):
+        self.start = Point(_start_x, _start_y)
+        self.end = Point(_end_x, _end_y)
+        self.coords = self.end - self.start
 
     # codirectional vectors
     def __eq__(self, other):
@@ -38,23 +42,27 @@ class Vector:
             return 0 < (self.coords.x * other.coords.x + self.coords.y * other.coords.y)
         return False
 
-    def distance(r):
-        return sqrt(pow(coords.x - r.coords.x, 2) + pow(coords.y - r.coords.y, 2))
+    def distance(self, r):
+        return sqrt(pow(self.coords.x - r.coords.x, 2) + pow(self.coords.y - r.coords.y, 2))
 
-    def length():
-        return sqrt(pow(coords.x, 2) + pow(coords.y, 2))
+    def length(self):
+        return sqrt(pow(self.coords.x, 2) + pow(self.coords.y, 2))
 
     # if positive --> <90 degrees
-    def getScalarMult(r):
-        return (coords.x * r.coords.x) + (coords.y * r.coords.y)
+    def getScalarMult(self, r):
+        return (self.coords.x * r.coords.x) + (self.coords.y * r.coords.y)
 
     # if cos > 0.7 --> <45 degrees
-    def getCos(r):
-        return (getScalarMult(r) / (length() * r.length()))
+    # > 0,866 --> <30
+    def getCos(self, r):
+        return (self.getScalarMult(r) / (self.length() * r.length()))
 
-    def update(newCoords):
+    def update(self, newCoords):
         self.coords = newCoords
         self.end = self.start + newCoords
+
+    def draw(self, image, colour, thickness=3):
+        cv2.arrowedLine(image, (self.start.x, self.start.y), (self.end.x, self.end.y), colour, thickness)
 
 def draw_landmarks_on_image(rgb_image, recogntion_result, MARGIN, FONT_SIZE, HANDEDNESS_TEXT_COLOR, FONT_THICKNESS):
     try:
@@ -168,6 +176,8 @@ if __name__ == '__main__':
     labels = deque(maxlen=Q.maxlen)
     labels_dict = {}
     labels_score_dict = {}
+    vectors = deque(maxlen=Q.maxlen-1)
+    argcoses_means = deque(maxlen=Q.maxlen)
 
     with GestureRecognizer.create_from_options(options) as recognizer:
         while(True):
@@ -202,14 +212,30 @@ if __name__ == '__main__':
             else:
                 movement_frames_loss += 1
 
-            if movement_frames_loss > 3:
+            if movement_frames_loss > 3 and len(movement_buffer):
                 movement_buffer.clear()
+                vectors.clear()
 
-            if len(movement_buffer) > 2:
+            if len(movement_buffer) > 1:
                 for pos in range(1, len(movement_buffer)):
-                    cv2.arrowedLine(annotated_image, (movement_buffer[pos-1][0], movement_buffer[pos-1][1]),
-                                    (movement_buffer[pos][0], movement_buffer[pos][1]), (255, 0, 0), 3)
+                    vectors.append(Vector(movement_buffer[pos-1][0], movement_buffer[pos-1][1], movement_buffer[pos][0], movement_buffer[pos][1]))
 
+            if len(argcoses_means):
+                argcoses_means.clear()
+
+            if len(vectors) > 0:
+                for i, vector in enumerate(vectors):
+                    vector.draw(annotated_image, (255, 0, 0), 3)
+                    if i > 0 and vectors[i-1].length() > 4 and vector.length() > 4:
+                        prev_vector = vectors[i-1]
+                        argcoses_means.append(prev_vector.getCos(vector))
+
+                np_argcoses = np.array(argcoses_means)
+                
+                movement_label = 'straight' if np_argcoses.mean() > 0.94 else ''
+                movement_label = 'circle' if (np.any(np.where(np_argcoses > 0.7)) and movement_label == '') else movement_label
+
+                annotated_image = cv2.putText(annotated_image, movement_label, (50, 150), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2, cv2.LINE_AA)
             annotated_image = cv2.putText(annotated_image, result_letter, (50, 100), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2, cv2.LINE_AA)
             cv2.imshow('frame', annotated_image)
 
@@ -219,5 +245,4 @@ if __name__ == '__main__':
 
     # After the loop release the cap object
     vid.release()
-    # Destroy all the windows
     cv2.destroyAllWindows()
