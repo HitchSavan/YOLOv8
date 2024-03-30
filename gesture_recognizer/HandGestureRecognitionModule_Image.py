@@ -64,10 +64,12 @@ def draw_landmarks_on_image(rgb_image, recogntion_result, MARGIN, FONT_SIZE, HAN
 
 def gesture_recognizer_init(path):
 
+    epochs = 500
+
     try:
-        model_path = f'{path}/gesture_recognizer/model/gesture_recognizer.task'
+        model_path = f'{path}/gesture_recognizer/model_{epochs}epochs/gesture_recognizer.task'
     except:
-        model_path = f'{path}\\gesture_recognizer\\model\\gesture_recognizer.task'
+        model_path = f'{path}\\gesture_recognizer\\model_{epochs}epochs\\gesture_recognizer.task'
 
     MARGIN = 10  # pixels
     FONT_SIZE = 1
@@ -85,7 +87,9 @@ def gesture_recognizer_init(path):
 
     options = GestureRecognizerOptions(
         base_options=BaseOptions(model_asset_path=model_path),
-        running_mode=VisionRunningMode.IMAGE)
+        running_mode=VisionRunningMode.IMAGE,
+        num_hands=2
+        )
 
     return (GestureRecognizer, options, gest_format)
 
