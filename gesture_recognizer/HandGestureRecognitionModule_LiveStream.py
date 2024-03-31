@@ -12,188 +12,170 @@ sys.path.append('../gesture_recognition/utils')
 
 from movement_vector import Vector
 
-mp_hands = mp.solutions.hands
-mp_drawing = mp.solutions.drawing_utils
-mp_drawing_styles = mp.solutions.drawing_styles
+class GestureRecognizerLiveStream():
+    mp_hands = mp.solutions.hands
+    mp_drawing = mp.solutions.drawing_utils
+    mp_drawing_styles = mp.solutions.drawing_styles
 
 
-buffer_size = 6
-movement_buffer = deque(maxlen=buffer_size)
-movement_frames_loss = 0
-Q = deque(maxlen=15)
-labels = deque(maxlen=Q.maxlen)
-labels_dict = {}
-labels_score_dict = {}
-vectors = deque(maxlen=Q.maxlen-1)
-argcoses_means = deque(maxlen=Q.maxlen)
+    buffer_size = 6
+    movement_buffer = deque(maxlen=buffer_size)
+    movement_frames_loss = 0
+    Q = deque(maxlen=15)
+    labels = deque(maxlen=Q.maxlen)
+    labels_dict = {}
+    labels_score_dict = {}
+    vectors = deque(maxlen=Q.maxlen-1)
+    argcoses_means = deque(maxlen=Q.maxlen)
+    prev_timestamp = 0.0
 
-def display_image_with_gestures_and_hand_landmarks(image, result, prev_timestamp):
-    global movement_frames_loss
+    def display_image_with_gestures_and_hand_landmarks(self, image, result):
+        MARGIN = 10  # pixels
+        FONT_SIZE = 1
+        FONT_THICKNESS = 1
+        HANDEDNESS_TEXT_COLOR = (0, 255, 255) # RGB
+        try:
+            print(f'gesture recognition result: Accuracy: {result.gestures[0][0].score}, letter: {result.gestures[0][0].category_name}')
+            letter = result.gestures[0][0].category_name
+            score = result.gestures[0][0].score
+        except:
+            print('No hands detected')
+            letter = ''
+            score = 0
 
-    MARGIN = 10  # pixels
-    FONT_SIZE = 1
-    FONT_THICKNESS = 1
-    HANDEDNESS_TEXT_COLOR = (0, 255, 255) # RGB
-    try:
-        print(f'gesture recognition result: Accuracy: {result.gestures[0][0].score}, letter: {result.gestures[0][0].category_name}')
-        letter = result.gestures[0][0].category_name
-        score = result.gestures[0][0].score
-    except:
-        print('No hands detected')
-        letter = ''
-        score = 0
-
-    
-    hand_landmarks_list = result.hand_landmarks
-    handedness_list = result.handedness
-    
-    annotated_image = np.copy(image)
-
-    position = None
-
-    # Loop through the detected hands to visualize.
-    for idx in range(len(hand_landmarks_list)):
-        hand_landmarks = hand_landmarks_list[idx]
-        handedness = handedness_list[idx]
-
-        # Draw the hand landmarks.
-        hand_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
-        hand_landmarks_proto.landmark.extend([
-            landmark_pb2.NormalizedLandmark(x=landmark.x, y=landmark.y, z=landmark.z) for landmark in hand_landmarks
-        ])
-        solutions.drawing_utils.draw_landmarks(
-            annotated_image,
-            hand_landmarks_proto,
-            solutions.hands.HAND_CONNECTIONS,
-            solutions.drawing_styles.get_default_hand_landmarks_style(),
-            solutions.drawing_styles.get_default_hand_connections_style())
-
-        # Get the top left corner of the detected hand's bounding box.
-        height, width, _ = annotated_image.shape
-        x_coordinates = [landmark.x for landmark in hand_landmarks]
-        y_coordinates = [landmark.y for landmark in hand_landmarks]
-        text_x = int(min(x_coordinates) * width)
-        text_y = int(min(y_coordinates) * height) - MARGIN
-
-        # Draw handedness (left or right hand) on the image.
-        cv2.putText(annotated_image, f"{handedness[0].category_name}",
-                    (text_x, text_y), cv2.FONT_HERSHEY_DUPLEX,
-                    FONT_SIZE, HANDEDNESS_TEXT_COLOR, FONT_THICKNESS, cv2.LINE_AA)
         
-        position = (int(sum([coord * width for coord in x_coordinates])/len([coord * width for coord in x_coordinates])),
-                    int(sum([coord * height for coord in y_coordinates])/len([coord * height for coord in y_coordinates])))
+        hand_landmarks_list = result.hand_landmarks
+        handedness_list = result.handedness
         
-    # FPS
-    timestamp = time()
-    fps = f'{int(1/(timestamp - prev_timestamp))}'
-    print(f'FPS: {fps}')
-    annotated_image = cv2.putText(annotated_image, fps, (50, 50), cv2.FONT_HERSHEY_COMPLEX, 
-                                  1, (0, 255, 255), 2, cv2.LINE_AA)
+        annotated_image = np.copy(image)
 
-    labels.append(letter)
+        position = None
 
-    if not labels_score_dict.__contains__(letter):
-        labels_score_dict[letter] = score
-    else:
-        labels_score_dict[letter] += score
+        # Loop through the detected hands to visualize.
+        for idx in range(len(hand_landmarks_list)):
+            hand_landmarks = hand_landmarks_list[idx]
+            handedness = handedness_list[idx]
 
-    unique, counts = np.unique(labels, return_counts=True)
-    labels_dict = dict(zip(unique, counts))
+            # Draw the hand landmarks.
+            hand_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
+            hand_landmarks_proto.landmark.extend([
+                landmark_pb2.NormalizedLandmark(x=landmark.x, y=landmark.y, z=landmark.z) for landmark in hand_landmarks
+            ])
+            solutions.drawing_utils.draw_landmarks(
+                annotated_image,
+                hand_landmarks_proto,
+                solutions.hands.HAND_CONNECTIONS,
+                solutions.drawing_styles.get_default_hand_landmarks_style(),
+                solutions.drawing_styles.get_default_hand_connections_style())
 
-    Q.append(labels_score_dict[letter] / labels_dict[letter])
+            # Get the top left corner of the detected hand's bounding box.
+            height, width, _ = annotated_image.shape
+            x_coordinates = [landmark.x for landmark in hand_landmarks]
+            y_coordinates = [landmark.y for landmark in hand_landmarks]
+            text_x = int(min(x_coordinates) * width)
+            text_y = int(min(y_coordinates) * height) - MARGIN
 
-    results = np.array(Q)
-    i = np.argmax(results)
-    
-    result_letter = labels[i]
+            # Draw handedness (left or right hand) on the image.
+            cv2.putText(annotated_image, f"{handedness[0].category_name}",
+                        (text_x, text_y), cv2.FONT_HERSHEY_DUPLEX,
+                        FONT_SIZE, HANDEDNESS_TEXT_COLOR, FONT_THICKNESS, cv2.LINE_AA)
+            
+            position = (int(sum([coord * width for coord in x_coordinates])/len([coord * width for coord in x_coordinates])),
+                        int(sum([coord * height for coord in y_coordinates])/len([coord * height for coord in y_coordinates])))
+            
+        # FPS
+        timestamp = time()
+        fps = f'{int(1/(timestamp - self.prev_timestamp))}'
+        self.prev_timestamp = timestamp
+        print(f'FPS: {fps}')
+        annotated_image = cv2.putText(annotated_image, fps, (50, 50), cv2.FONT_HERSHEY_COMPLEX, 
+                                    1, (0, 255, 255), 2, cv2.LINE_AA)
 
-    if position is not None:
-        movement_buffer.append(position)
-        movement_frames_loss = 0
+        self.labels.append(letter)
 
-    else:
-        movement_frames_loss += 1
+        if not self.labels_score_dict.__contains__(letter):
+            self.labels_score_dict[letter] = score
+        else:
+            self.labels_score_dict[letter] += score
 
-    if movement_frames_loss > 3 and len(movement_buffer):
-        movement_buffer.clear()
-        vectors.clear()
+        unique, counts = np.unique(self.labels, return_counts=True)
+        labels_dict = dict(zip(unique, counts))
 
-    if len(movement_buffer) > 1:
-        for pos in range(1, len(movement_buffer)):
-            vectors.append(Vector(movement_buffer[pos-1][0], movement_buffer[pos-1][1], movement_buffer[pos][0], movement_buffer[pos][1]))
+        self.Q.append(self.labels_score_dict[letter] / labels_dict[letter])
 
-    if len(argcoses_means):
-        argcoses_means.clear()
-
-    if len(vectors) > 0:
-        for i, vector in enumerate(vectors):
-            vector.draw(annotated_image, (255, 0, 0), 3)
-            if i > 0 and vectors[i-1].length() > 4 and vector.length() > 4:
-                prev_vector = vectors[i-1]
-                argcoses_means.append(prev_vector.getCos(vector))
-
-        np_argcoses = np.array(argcoses_means)
+        results = np.array(self.Q)
+        i = np.argmax(results)
         
-        # movement_label = 'straight' if np_argcoses.mean() > 0.94 else ''
-        # movement_label = 'circle' if (np.any(np.where(np_argcoses > 0.7)) and movement_label == '') else movement_label
+        result_letter = self.labels[i]
 
-        # annotated_image = cv2.putText(annotated_image, movement_label, (50, 150), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2, cv2.LINE_AA)
-    annotated_image = cv2.putText(annotated_image, result_letter, (50, 100), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2, cv2.LINE_AA)
-    cv2.imshow('frame', annotated_image)
+        if position is not None:
+            self.movement_buffer.append(position)
+            self.movement_frames_loss = 0
 
-    # the 'q' button is quitting button
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        exit
+        else:
+            self.movement_frames_loss += 1
 
-def gesture_recognizer_init(path):
+        if self.movement_frames_loss > 3 and len(self.movement_buffer):
+            self.movement_buffer.clear()
+            self.vectors.clear()
 
-    epochs = 500
+        if len(self.movement_buffer) > 1:
+            for pos in range(1, len(self.movement_buffer)):
+                self.vectors.append(Vector(self.movement_buffer[pos-1][0], self.movement_buffer[pos-1][1],
+                                           self.movement_buffer[pos][0], self.movement_buffer[pos][1]))
 
-    try:
-        model_path = f'{path}/gesture_recognizer/model_{epochs}epochs/gesture_recognizer.task'
-    except:
-        model_path = f'{path}\\gesture_recognizer\\model_{epochs}epochs\\gesture_recognizer.task'
+        if len(self.argcoses_means):
+            self.argcoses_means.clear()
 
-    MARGIN = 10  # pixels
-    FONT_SIZE = 1
-    FONT_THICKNESS = 1
-    HANDEDNESS_TEXT_COLOR = (0, 255, 255) # RGB
-    gest_format = (MARGIN, FONT_SIZE, HANDEDNESS_TEXT_COLOR, FONT_THICKNESS)
+        if len(self.vectors) > 0:
+            for i, vector in enumerate(self.vectors):
+                vector.draw(annotated_image, (255, 0, 0), 3)
+                if i > 0 and self.vectors[i-1].length() > 4 and vector.length() > 4:
+                    prev_vector = self.vectors[i-1]
+                    self.argcoses_means.append(prev_vector.getCos(vector))
 
-    BaseOptions = mp.tasks.BaseOptions
-    GestureRecognizer = mp.tasks.vision.GestureRecognizer
-    GestureRecognizerOptions = mp.tasks.vision.GestureRecognizerOptions
-    GestureRecognizerResult = mp.tasks.vision.GestureRecognizerResult
-    VisionRunningMode = mp.tasks.vision.RunningMode
+            np_argcoses = np.array(self.argcoses_means)
+            
+            # movement_label = 'straight' if np_argcoses.mean() > 0.94 else ''
+            # movement_label = 'circle' if (np.any(np.where(np_argcoses > 0.7)) and movement_label == '') else movement_label
 
-    # Create a gesture recognizer instance with the live stream mode:
-    def print_result(result: GestureRecognizerResult, output_image: mp.Image, timestamp_ms: int): # type: ignore
+            # annotated_image = cv2.putText(annotated_image, movement_label, (50, 150), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2, cv2.LINE_AA)
+        annotated_image = cv2.putText(annotated_image, result_letter, (50, 100), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2, cv2.LINE_AA)
+        cv2.imshow('frame', annotated_image)
 
-        # font
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        # org
-        org = (50, 50)
-        # fontScale
-        fontScale = 1
-        # Yellow color in BGR
-        color = (0, 255, 255)
-        # Line thickness of 2 px
-        thickness = 2
+    def gesture_recognizer_init(self, path):
 
-        # writable_img = output_image.numpy_view()
+        epochs = 500
 
-        # output_image = cv2.putText(writable_img, str(result), org, font, fontScale, color, thickness, cv2.LINE_AA)
+        try:
+            model_path = f'{path}/gesture_recognizer/model_{epochs}epochs/gesture_recognizer.task'
+        except:
+            model_path = f'{path}\\gesture_recognizer\\model_{epochs}epochs\\gesture_recognizer.task'
 
-        # Display the result
-        display_image_with_gestures_and_hand_landmarks(output_image.numpy_view(), result, timestamp_ms)
+        MARGIN = 10  # pixels
+        FONT_SIZE = 1
+        FONT_THICKNESS = 1
+        HANDEDNESS_TEXT_COLOR = (0, 255, 255) # RGB
+        gest_format = (MARGIN, FONT_SIZE, HANDEDNESS_TEXT_COLOR, FONT_THICKNESS)
 
-    options = GestureRecognizerOptions(
-        base_options=BaseOptions(model_asset_path=model_path),
-        running_mode=VisionRunningMode.LIVE_STREAM,
-        result_callback=print_result,
-        num_hands=2)
+        BaseOptions = mp.tasks.BaseOptions
+        GestureRecognizer = mp.tasks.vision.GestureRecognizer
+        GestureRecognizerOptions = mp.tasks.vision.GestureRecognizerOptions
+        GestureRecognizerResult = mp.tasks.vision.GestureRecognizerResult
+        VisionRunningMode = mp.tasks.vision.RunningMode
 
-    return (GestureRecognizer, options, gest_format)
+        # Create a gesture recognizer instance with the live stream mode:
+        def print_result(result: GestureRecognizerResult, output_image: mp.Image, timestamp_ms: int): # type: ignore
+            # Display the result
+            self.display_image_with_gestures_and_hand_landmarks(output_image.numpy_view(), result)
+
+        options = GestureRecognizerOptions(
+            base_options=BaseOptions(model_asset_path=model_path),
+            running_mode=VisionRunningMode.LIVE_STREAM,
+            result_callback=print_result,
+            num_hands=2)
+
+        return (GestureRecognizer, options, gest_format)
 
 if __name__ == '__main__':
 
@@ -204,7 +186,9 @@ if __name__ == '__main__':
     print('Opening camera...')
     vid = cv2.VideoCapture(0)
 
-    GestureRecognizer, options, gest_format = gesture_recognizer_init(path)
+    gest_recogn = GestureRecognizerLiveStream()
+
+    GestureRecognizer, options, gest_format = gest_recogn.gesture_recognizer_init(path)
 
     timestamp = 0
 

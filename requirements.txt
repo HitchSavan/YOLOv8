@@ -7,9 +7,10 @@
 torch
 torchvision
 torchaudio
-mediapipe_model_maker
 mediapipe
+mediapipe_model_maker
 ultralytics
+tensorflow-addons[tensorflow]
 # matplotlib>=3.2.2
 # numpy>=1.24.3
 # Pillow>=7.1.2

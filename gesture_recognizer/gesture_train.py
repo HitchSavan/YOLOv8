@@ -21,7 +21,7 @@ data = gesture_recognizer.Dataset.from_folder(
 
 train_data, rest_data = data.split(0.8)
 validation_data, test_data = rest_data.split(0.5)
-epochs=500
+epochs=1000
 
 hparams = gesture_recognizer.HParams(export_dir=f"gesture_recognizer{path_separator}model_{epochs}epochs", epochs=epochs)
 options = gesture_recognizer.GestureRecognizerOptions(hparams=hparams)
