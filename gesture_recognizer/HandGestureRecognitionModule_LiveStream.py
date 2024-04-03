@@ -11,8 +11,11 @@ import sys
 sys.path.append('../gesture_recognition/utils')
 
 from movement_vector import Vector
+from word_builder import WordBuilder
 
 class GestureRecognizerLiveStream():
+    wordBuilder = WordBuilder()
+
     mp_hands = mp.solutions.hands
     mp_drawing = mp.solutions.drawing_utils
     mp_drawing_styles = mp.solutions.drawing_styles
@@ -141,6 +144,8 @@ class GestureRecognizerLiveStream():
 
             # annotated_image = cv2.putText(annotated_image, movement_label, (50, 150), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2, cv2.LINE_AA)
         annotated_image = cv2.putText(annotated_image, result_letter, (50, 100), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2, cv2.LINE_AA)
+        annotated_image = cv2.putText(annotated_image, self.wordBuilder.addLetter(result_letter),
+                                      (100, 100), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2, cv2.LINE_AA)
         cv2.imshow('frame', annotated_image)
 
     def gesture_recognizer_init(self, path):

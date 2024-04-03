@@ -1504,20 +1504,9 @@ Epoch 1000/1000
 2024-03-31 08:50:45.498604: I tensorflow/core/framework/local_rendezvous.cc:421] Local rendezvous recv item cancelled. Key hash: 5222419258844594856
 2024-03-31 08:50:45.498623: I tensorflow/core/framework/local_rendezvous.cc:421] Local rendezvous recv item cancelled. Key hash: 9574913624078910752
 1888/1888 [==============================] - 20s 2ms/step - loss: 1.5113 - categorical_accuracy: 0.6096
+
 Test loss:1.5113269090652466, Test accuracy:0.6096398234367371
-Downloading https://storage.googleapis.com/mediapipe-assets/gesture_embedder.tflite to /tmp/model_maker/gesture_recognizer/gesture_embedder.tflite
-Using existing files at /tmp/model_maker/gesture_recognizer/palm_detection_full.tflite
-Using existing files at /tmp/model_maker/gesture_recognizer/hand_landmark_full.tflite
-Downloading https://storage.googleapis.com/mediapipe-assets/canned_gesture_classifier.tflite to /tmp/model_maker/gesture_recognizer/canned_gesture_classifier.tflite
-2024-03-31 08:50:47.292231: W tensorflow/compiler/mlir/lite/python/tf_tfl_flatbuffer_helpers.cc:378] Ignored output_format.
-2024-03-31 08:50:47.292263: W tensorflow/compiler/mlir/lite/python/tf_tfl_flatbuffer_helpers.cc:381] Ignored drop_control_dependency.
-2024-03-31 08:50:47.292538: I tensorflow/cc/saved_model/reader.cc:83] Reading SavedModel from: /tmp/tmpf_5k3kbg/saved_model
-2024-03-31 08:50:47.293173: I tensorflow/cc/saved_model/reader.cc:51] Reading meta graph with tags { serve }
-2024-03-31 08:50:47.293190: I tensorflow/cc/saved_model/reader.cc:146] Reading SavedModel debug info (if present) from: /tmp/tmpf_5k3kbg/saved_model
-2024-03-31 08:50:47.294462: I tensorflow/compiler/mlir/mlir_graph_optimization_pass.cc:388] MLIR V1 optimization pass is not enabled
-2024-03-31 08:50:47.294963: I tensorflow/cc/saved_model/loader.cc:233] Restoring SavedModel bundle.
-2024-03-31 08:50:47.325671: I tensorflow/cc/saved_model/loader.cc:217] Running initialization op on SavedModel bundle at path: /tmp/tmpf_5k3kbg/saved_model
-2024-03-31 08:50:47.334541: I tensorflow/cc/saved_model/loader.cc:316] SavedModel load for tags { serve }; Status: success: OK. Took 42005 microseconds.
+
 Summary on the non-converted ops:
 ---------------------------------
  * Accepted dialects: tfl, builtin, func
