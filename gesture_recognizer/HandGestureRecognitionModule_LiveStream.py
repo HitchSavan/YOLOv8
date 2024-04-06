@@ -6,6 +6,8 @@ import numpy as np
 from collections import deque
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
+from mediapipe.tasks import python 
+from mediapipe.tasks.python import vision
 import sys
 
 sys.path.append('../gesture_recognition/utils')
@@ -13,24 +15,91 @@ sys.path.append('../gesture_recognition/utils')
 from movement_vector import Vector
 from word_builder import WordBuilder
 
-class GestureRecognizerLiveStream():
-    wordBuilder = WordBuilder()
+Q = deque(maxlen=15)
+class MovingAverageFilter:
+    def __init__(self):
+        self.labels = deque(maxlen=Q.maxlen)
+        self.labels_dict = {}
+        self.labels_score_dict = {}
 
-    mp_hands = mp.solutions.hands
-    mp_drawing = mp.solutions.drawing_utils
-    mp_drawing_styles = mp.solutions.drawing_styles
+    def process_filter(self, letter, score):
+        self.labels.append(letter)
+
+        if not self.labels_score_dict.__contains__(letter):
+            self.labels_score_dict[letter] = score
+        else:
+            self.labels_score_dict[letter] += score
+
+        unique, counts = np.unique(self.labels, return_counts=True)
+        labels_dict = dict(zip(unique, counts))
+
+        Q.append(self.labels_score_dict[letter] / labels_dict[letter])
+
+        results = np.array(Q)
+        i = np.argmax(results)
+        
+        result_letter = self.labels[i]
+
+        return result_letter
+    
+class MovementVector:
+    def __init__(self):
+        buffer_size = 6
+        self.movement_buffer = deque(maxlen=buffer_size)
+        self.movement_frames_loss = 0
+        self.vectors = deque(maxlen=Q.maxlen-1)
+        self.argcoses_means = deque(maxlen=Q.maxlen)
+
+    def process_movement_vectors(self, image, position):
+        if position is not None:
+            self.movement_buffer.append(position)
+            self.movement_frames_loss = 0
+
+        else:
+            self.movement_frames_loss += 1
+
+        if self.movement_frames_loss > 3 and len(self.movement_buffer):
+            self.movement_buffer.clear()
+            self.vectors.clear()
+
+        if len(self.movement_buffer) > 1:
+            for pos in range(1, len(self.movement_buffer)):
+                self.vectors.append(Vector(self.movement_buffer[pos-1][0],
+                                                          self.movement_buffer[pos-1][1],
+                                                          self.movement_buffer[pos][0],
+                                                          self.movement_buffer[pos][1]))
+
+        if len(self.argcoses_means):
+            self.argcoses_means.clear()
+
+        if len(self.vectors) > 0:
+            for i, vector in enumerate(self.vectors):
+                vector.draw(image, (255, 0, 0), 3)
+                if i > 0 and self.vectors[i-1].length() > 4 and vector.length() > 4:
+                    prev_vector = self.vectors[i-1]
+                    self.argcoses_means.append(prev_vector.getCos(vector))
+
+            np_argcoses = np.array(self.argcoses_means)
+            
+            # movement_label = 'straight' if np_argcoses.mean() > 0.94 else ''
+            # movement_label = 'circle' if (np.any(np.where(np_argcoses > 0.7)) and movement_label == '') else movement_label
+
+            # image = cv2.putText(image, movement_label, (50, 150), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2, cv2.LINE_AA)
+        
+        return image
 
 
-    buffer_size = 6
-    movement_buffer = deque(maxlen=buffer_size)
-    movement_frames_loss = 0
-    Q = deque(maxlen=15)
-    labels = deque(maxlen=Q.maxlen)
-    labels_dict = {}
-    labels_score_dict = {}
-    vectors = deque(maxlen=Q.maxlen-1)
-    argcoses_means = deque(maxlen=Q.maxlen)
-    prev_timestamp = 0.0
+class GestureRecognizerLiveStream:
+    def __init__(self):
+        self.wordBuilder = WordBuilder()
+        self.average_filter = MovingAverageFilter()
+        self.movement_vector = MovementVector()
+
+        self.mp_hands = mp.solutions.hands
+        self.mp_drawing = mp.solutions.drawing_utils
+        self.mp_drawing_styles = mp.solutions.drawing_styles
+
+        self.prev_timestamp = 0.0
 
     def display_image_with_gestures_and_hand_landmarks(self, image, result):
         MARGIN = 10  # pixels
@@ -94,55 +163,9 @@ class GestureRecognizerLiveStream():
         annotated_image = cv2.putText(annotated_image, fps, (50, 50), cv2.FONT_HERSHEY_COMPLEX, 
                                     1, (0, 255, 255), 2, cv2.LINE_AA)
 
-        self.labels.append(letter)
+        result_letter = self.average_filter.process_filter(letter, score)
+        annotated_image = self.movement_vector.process_movement_vectors(annotated_image, position)
 
-        if not self.labels_score_dict.__contains__(letter):
-            self.labels_score_dict[letter] = score
-        else:
-            self.labels_score_dict[letter] += score
-
-        unique, counts = np.unique(self.labels, return_counts=True)
-        labels_dict = dict(zip(unique, counts))
-
-        self.Q.append(self.labels_score_dict[letter] / labels_dict[letter])
-
-        results = np.array(self.Q)
-        i = np.argmax(results)
-        
-        result_letter = self.labels[i]
-
-        if position is not None:
-            self.movement_buffer.append(position)
-            self.movement_frames_loss = 0
-
-        else:
-            self.movement_frames_loss += 1
-
-        if self.movement_frames_loss > 3 and len(self.movement_buffer):
-            self.movement_buffer.clear()
-            self.vectors.clear()
-
-        if len(self.movement_buffer) > 1:
-            for pos in range(1, len(self.movement_buffer)):
-                self.vectors.append(Vector(self.movement_buffer[pos-1][0], self.movement_buffer[pos-1][1],
-                                           self.movement_buffer[pos][0], self.movement_buffer[pos][1]))
-
-        if len(self.argcoses_means):
-            self.argcoses_means.clear()
-
-        if len(self.vectors) > 0:
-            for i, vector in enumerate(self.vectors):
-                vector.draw(annotated_image, (255, 0, 0), 3)
-                if i > 0 and self.vectors[i-1].length() > 4 and vector.length() > 4:
-                    prev_vector = self.vectors[i-1]
-                    self.argcoses_means.append(prev_vector.getCos(vector))
-
-            np_argcoses = np.array(self.argcoses_means)
-            
-            # movement_label = 'straight' if np_argcoses.mean() > 0.94 else ''
-            # movement_label = 'circle' if (np.any(np.where(np_argcoses > 0.7)) and movement_label == '') else movement_label
-
-            # annotated_image = cv2.putText(annotated_image, movement_label, (50, 150), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2, cv2.LINE_AA)
         annotated_image = cv2.putText(annotated_image, result_letter, (50, 100), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2, cv2.LINE_AA)
         annotated_image = cv2.putText(annotated_image, self.wordBuilder.addLetter(result_letter),
                                       (100, 100), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2, cv2.LINE_AA)
@@ -150,7 +173,7 @@ class GestureRecognizerLiveStream():
 
     def gesture_recognizer_init(self, path):
 
-        epochs = 500
+        epochs = 1000
 
         try:
             model_path = f'{path}/gesture_recognizer/model_{epochs}epochs/gesture_recognizer.task'
@@ -175,7 +198,7 @@ class GestureRecognizerLiveStream():
             self.display_image_with_gestures_and_hand_landmarks(output_image.numpy_view(), result)
 
         options = GestureRecognizerOptions(
-            base_options=BaseOptions(model_asset_path=model_path),
+            base_options=BaseOptions(delegate=BaseOptions.Delegate.GPU, model_asset_path=model_path),
             running_mode=VisionRunningMode.LIVE_STREAM,
             result_callback=print_result,
             num_hands=2)
@@ -196,9 +219,10 @@ if __name__ == '__main__':
     GestureRecognizer, options, gest_format = gest_recogn.gesture_recognizer_init(path)
 
     timestamp = 0
-
     with GestureRecognizer.create_from_options(options) as recognizer:
         while(True):
+
+            print(timestamp, '\n')
             # Capture the video frame by frame
             ret, frame = vid.read()
 
@@ -212,7 +236,7 @@ if __name__ == '__main__':
 
             # the 'q' button is quitting button
             if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+                exit()
 
     # After the loop release the cap object
     vid.release()
