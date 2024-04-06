@@ -11,7 +11,7 @@ class WordBuilder:
         if len(self.cur_word) > 3:
             active_check_len = 3
         else:
-            active_check_len = len(self.cur_word)-1
+            active_check_len = len(self.cur_word)
         for i in range(active_check_len):
             if self.cur_word[-1-i] == letter:
                 return self.cur_word
