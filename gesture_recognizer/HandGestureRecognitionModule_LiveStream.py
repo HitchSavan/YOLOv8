@@ -175,10 +175,7 @@ class GestureRecognizerLiveStream:
 
         epochs = 1000
 
-        try:
-            model_path = f'{path}/gesture_recognizer/model_{epochs}epochs/gesture_recognizer.task'
-        except:
-            model_path = f'{path}\\gesture_recognizer\\model_{epochs}epochs\\gesture_recognizer.task'
+        model_path = os.path.join(path, 'gesture_recognizer', f'model_{epochs}epochs', 'gesture_recognizer.task')
 
         MARGIN = 10  # pixels
         FONT_SIZE = 1
