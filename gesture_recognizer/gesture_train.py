@@ -5,14 +5,13 @@ assert tf.__version__.startswith('2')
 from mediapipe_model_maker import gesture_recognizer
 import matplotlib.pyplot as plt
 
+import mediapipe as mp
+
 path = os.getcwd()
-path_separator = ''
 try:
     dataset_path = path[:path.rindex('/')] + '/Datasets/SLOVO_sign_dataset/slovo/letters/'
-    path_separator = '/'
 except:
     dataset_path = path[:path.rindex('\\')] + '\\Datasets\\SLOVO_sign_dataset\\slovo\\letters\\'
-    path_separator = '\\'
 
 data = gesture_recognizer.Dataset.from_folder(
     dirname=dataset_path,
@@ -22,8 +21,8 @@ data = gesture_recognizer.Dataset.from_folder(
 train_data, rest_data = data.split(0.8)
 validation_data, test_data = rest_data.split(0.5)
 epochs=1000
-
-hparams = gesture_recognizer.HParams(export_dir=f"gesture_recognizer{path_separator}model_{epochs}epochs", epochs=epochs)
+delegate=mp.tasks.BaseOptions.Delegate.GPU
+hparams = gesture_recognizer.HParams(export_dir=os.path.join("gesture_recognizer", f"model_{epochs}epochs"), epochs=epochs)
 options = gesture_recognizer.GestureRecognizerOptions(hparams=hparams)
 model = gesture_recognizer.GestureRecognizer.create(
     train_data=train_data,

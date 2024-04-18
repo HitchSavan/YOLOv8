@@ -90,8 +90,11 @@ class MovementVector:
 
 
 class GestureRecognizerLiveStream:
+    cur_threads_amount = 0
+    MAX_THREADS_AMOUNT = 10
+
     def __init__(self):
-        self.wordBuilder = WordBuilder()
+        self.word_builder = WordBuilder()
         self.average_filter = MovingAverageFilter()
         self.movement_vector = MovementVector()
 
@@ -167,13 +170,15 @@ class GestureRecognizerLiveStream:
         annotated_image = self.movement_vector.process_movement_vectors(annotated_image, position)
 
         annotated_image = cv2.putText(annotated_image, result_letter, (50, 100), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2, cv2.LINE_AA)
-        annotated_image = cv2.putText(annotated_image, self.wordBuilder.addLetter(result_letter),
-                                      (100, 100), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2, cv2.LINE_AA)
+        annotated_image = cv2.putText(annotated_image,
+                                      self.word_builder.addLetter(result_letter) if result_letter != 'none' else self.word_builder.getCurWord(),
+                                      (50, annotated_image.shape[0]-50), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2, cv2.LINE_AA)
+        GestureRecognizerLiveStream.cur_threads_amount -= 1
         cv2.imshow('frame', annotated_image)
 
     def gesture_recognizer_init(self, path):
 
-        epochs = 1000
+        epochs = 200
 
         model_path = os.path.join(path, 'gesture_recognizer', f'model_{epochs}epochs', 'gesture_recognizer.task')
 
@@ -228,13 +233,15 @@ if __name__ == '__main__':
 
             mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
 
+            while (GestureRecognizerLiveStream.cur_threads_amount > GestureRecognizerLiveStream.MAX_THREADS_AMOUNT):
+                time.sleep(0.01)
+            GestureRecognizerLiveStream.cur_threads_amount += 1
             recognizer.recognize_async(mp_image, timestamp)
             timestamp += 1
 
             # the 'q' button is quitting button
             if cv2.waitKey(1) & 0xFF == ord('q'):
+                # After the loop release the cap object
+                vid.release()
+                cv2.destroyAllWindows()
                 exit()
-
-    # After the loop release the cap object
-    vid.release()
-    cv2.destroyAllWindows()
