@@ -7,7 +7,6 @@
 torch
 torchvision
 torchaudio
-mediapipe
 mediapipe_model_maker
 ultralytics
 tensorflow-addons[tensorflow]
