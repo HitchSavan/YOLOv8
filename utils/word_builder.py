@@ -3,13 +3,14 @@ import sys
 class WordBuilder:
     def __init__(self):
         self.cur_word = ''
+        self.check_len = 3
 
     def getCurWord(self):
         return self.cur_word
     
     def addLetter(self, letter):
-        if len(self.cur_word) > 3:
-            active_check_len = 3
+        if len(self.cur_word) > self.check_len:
+            active_check_len = self.check_len
         else:
             active_check_len = len(self.cur_word)
         for i in range(active_check_len):
