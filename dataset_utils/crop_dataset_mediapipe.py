@@ -14,7 +14,8 @@ if __name__ == '__main__':
     options = HandLandmarkerOptions(
         base_options=BaseOptions(delegate=BaseOptions.Delegate.GPU,
                                 model_asset_path=os.path.join('dataset_utils', 'hand_landmarker.task')),
-        running_mode=VisionRunningMode.IMAGE)
+        running_mode=VisionRunningMode.IMAGE,
+            num_hands=2)
 
     dataset_src_folder = os.path.join(path, '..', 'Datasets', 'SLOVO_sign_dataset', 'slovo', 'letters')
     dataset_src_folder = Path(dataset_src_folder)
@@ -22,6 +23,8 @@ if __name__ == '__main__':
 
     with HandLandmarker.create_from_options(options) as landmarker:
         for dirpath, dirnames, filenames in os.walk(dataset_src_folder):
+            # if not dirpath.endswith('ы') and not dirpath.endswith('ь') and not dirpath.endswith('э') and not dirpath.endswith('ю') and not dirpath.endswith('я'):
+            #     continue
             for file in filenames:
                 filepath = os.path.join(dirpath, file)
                 img = cv2.imread(filepath)
