@@ -167,17 +167,6 @@ Epoch 84/1000
 7506/7506 [==============================] - 44s 6ms/step - loss: 1.5038 - categorical_accuracy: 0.5456 - val_loss: 1.4394 - val_categorical_accuracy: 0.5858 - lr: 4.3423e-04
 Epoch 85/1000
 7506/7506 [==============================] - 45s 6ms/step - loss: 1.4978 - categorical_accuracy: 0.5462 - val_loss: 1.4476 - val_categorical_accuracy: 0.5906 - lr: 4.2989e-04
-
-Epoch 81/1000
-7506/7506 [==============================] - 45s 6ms/step - loss: 1.5065 - categorical_accuracy: 0.5422 - val_loss: 1.4330 - val_categorical_accuracy: 0.5874 - lr: 4.4752e-04
-Epoch 82/1000
-7506/7506 [==============================] - 45s 6ms/step - loss: 1.5011 - categorical_accuracy: 0.5450 - val_loss: 1.4377 - val_categorical_accuracy: 0.5922 - lr: 4.4305e-04
-Epoch 83/1000
-7506/7506 [==============================] - 45s 6ms/step - loss: 1.4980 - categorical_accuracy: 0.5469 - val_loss: 1.4341 - val_categorical_accuracy: 0.5869 - lr: 4.3862e-04
-Epoch 84/1000
-7506/7506 [==============================] - 44s 6ms/step - loss: 1.5038 - categorical_accuracy: 0.5456 - val_loss: 1.4394 - val_categorical_accuracy: 0.5858 - lr: 4.3423e-04
-Epoch 85/1000
-7506/7506 [==============================] - 45s 6ms/step - loss: 1.4978 - categorical_accuracy: 0.5462 - val_loss: 1.4476 - val_categorical_accuracy: 0.5906 - lr: 4.2989e-04
 Epoch 86/1000
 7506/7506 [==============================] - 46s 6ms/step - loss: 1.4960 - categorical_accuracy: 0.5492 - val_loss: 1.4483 - val_categorical_accuracy: 0.5885 - lr: 4.2559e-04
 Epoch 87/1000
@@ -299,22 +288,6 @@ Epoch 144/1000
 Epoch 145/1000
 7506/7506 [==============================] - 45s 6ms/step - loss: 1.4823 - categorical_accuracy: 0.5495 - val_loss: 1.5017 - val_categorical_accuracy: 0.5816 - lr: 2.3522e-04
 Epoch 146/1000
-7499/7506 [============================>.] - ETA: 0s - loss: 1.4802 - categorical_accuracy: 0.54892024-04-08 01:31:13.486383: I tensorflow/core/framework/local_rendezvous.cc:421] Local rendezvous recv item cancelled. Key hash: 4812598562821711732
-2024-04-08 01:31:13.486426: I tensorflow/core/framework/local_rendezvous.cc:421] Local rendezvous recv item cancelled. Key hash: 16032275197203102479
-2024-04-08 01:31:13.486454: I tensorflow/core/framework/local_rendezvous.cc:421] Local rendezvous recv item cancelled. Key hash: 13768259324577254692
-2024-04-08 01:31:13.486473: I tensorflow/core/framework/local_rendezvous.cc:421] Local rendezvous recv item cancelled. Key hash: 7635123626397389571
-2024-04-08 01:31:13.486491: I tensorflow/core/framework/local_rendezvous.cc:421] Local rendezvous recv item cancelled. Key hash: 13225543350444445116
-2024-04-08 01:31:13.486507: I tensorflow/core/framework/local_rendezvous.cc:421] Local rendezvous recv item cancelled. Key hash: 17666259106591918019
-2024-04-08 01:31:13.486524: I tensorflow/core/framework/local_rendezvous.cc:421] Local rendezvous recv item cancelled. Key hash: 7317186068892175676
-2024-04-08 01:31:13.486539: I tensorflow/core/framework/local_rendezvous.cc:421] Local rendezvous recv item cancelled. Key hash: 1980971272518826475
-2024-04-08 01:31:13.486557: I tensorflow/core/framework/local_rendezvous.cc:421] Local rendezvous recv item cancelled. Key hash: 16499521890734248926
-2024-04-08 01:31:13.486576: I tensorflow/core/framework/local_rendezvous.cc:421] Local rendezvous recv item cancelled. Key hash: 6154065167233620729
-2024-04-08 01:31:13.486593: I tensorflow/core/framework/local_rendezvous.cc:421] Local rendezvous recv item cancelled. Key hash: 10450540166770324986
-2024-04-08 01:31:13.486609: I tensorflow/core/framework/local_rendezvous.cc:421] Local rendezvous recv item cancelled. Key hash: 10264188430570327215
-2024-04-08 01:31:13.486625: I tensorflow/core/framework/local_rendezvous.cc:421] Local rendezvous recv item cancelled. Key hash: 16260094681928759104
-2024-04-08 01:31:13.486642: I tensorflow/core/framework/local_rendezvous.cc:421] Local rendezvous recv item cancelled. Key hash: 13989763279514434443
-2024-04-08 01:31:13.486658: I tensorflow/core/framework/local_rendezvous.cc:421] Local rendezvous recv item cancelled. Key hash: 14307619142378011472
-2024-04-08 01:31:13.486680: I tensorflow/core/framework/local_rendezvous.cc:421] Local rendezvous recv item cancelled. Key hash: 3350334158322196346
 7506/7506 [==============================] - 45s 6ms/step - loss: 1.4807 - categorical_accuracy: 0.5489 - val_loss: 1.5064 - val_categorical_accuracy: 0.5821 - lr: 2.3286e-04
 Epoch 147/1000
 7506/7506 [==============================] - 46s 6ms/step - loss: 1.4883 - categorical_accuracy: 0.5472 - val_loss: 1.5071 - val_categorical_accuracy: 0.5826 - lr: 2.3054e-04
@@ -1633,9 +1606,6 @@ Epoch 803/1000
 Epoch 804/1000
 7506/7506 [==============================] - 44s 6ms/step - loss: 1.4624 - categorical_accuracy: 0.5528 - val_loss: 1.6050 - val_categorical_accuracy: 0.5762 - lr: 3.1265e-07
 Epoch 805/1000
-7494/7506 [============================>.] - ETA: 0s - loss: 1.4674 - categorical_accuracy: 0.55272024-04-08 10:00:21.625047: I tensorflow/core/framework/local_rendezvous.cc:421] Local rendezvous recv item cancelled. Key hash: 5469722053410373848
-2024-04-08 10:00:21.625088: I tensorflow/core/framework/local_rendezvous.cc:421] Local rendezvous recv item cancelled. Key hash: 1980971272518826475
-2024-04-08 10:00:21.625163: I tensorflow/core/framework/local_rendezvous.cc:421] Local rendezvous recv item cancelled. Key hash: 5510774332930817817
 7506/7506 [==============================] - 44s 6ms/step - loss: 1.4678 - categorical_accuracy: 0.5528 - val_loss: 1.6050 - val_categorical_accuracy: 0.5762 - lr: 3.0953e-07
 Epoch 806/1000
 7506/7506 [==============================] - 44s 6ms/step - loss: 1.4683 - categorical_accuracy: 0.5528 - val_loss: 1.6049 - val_categorical_accuracy: 0.5762 - lr: 3.0643e-07

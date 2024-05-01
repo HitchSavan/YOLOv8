@@ -32,7 +32,6 @@ Epoch 9/200
 Epoch 10/200
 7548/7548 [==============================] - 57s 8ms/step - loss: 1.5650 - categorical_accuracy: 0.5328 - val_loss: 1.3293 - val_categorical_accuracy: 0.6089 - lr: 9.1352e-04
 Epoch 11/200
-4166/7548 [===============>..............] - ETA: 16s - loss: 1.5618 - categorical_accuracy: 0.5294/media/hitchsavan/старый_поц_с_буфером_обмена_8_мб/projects/hand_detection/gesture_recognition/.ubuEnv/bin/python /media/hitchsavan/старый_поц_с_буфером_обмена_8_мб/projects/hand_detection/gesture_recognition/gesture_recognizer/HandG4175/7548 [===============>..............] - ETA: 16s - loss: 1.5614 - categorical_accuracy: 0.5293Module_LiveStream.py
 7548/7548 [==============================] - 63s 8ms/step - loss: 1.5655 - categorical_accuracy: 0.5266 - val_loss: 1.3369 - val_categorical_accuracy: 0.6094 - lr: 9.0438e-04
 Epoch 12/200
 7548/7548 [==============================] - 58s 8ms/step - loss: 1.5667 - categorical_accuracy: 0.5287 - val_loss: 1.3419 - val_categorical_accuracy: 0.6073 - lr: 8.9534e-04
@@ -92,7 +91,6 @@ Epoch 39/200
 7548/7548 [==============================] - 53s 7ms/step - loss: 1.5157 - categorical_accuracy: 0.5415 - val_loss: 1.4614 - val_categorical_accuracy: 0.5925 - lr: 6.8255e-04
 Epoch 40/200
 7548/7548 [==============================] - 54s 7ms/step - loss: 1.5168 - categorical_accuracy: 0.5422 - val_loss: 1.4606 - val_categorical_accuracy: 0.5925 - lr: 6.7573e-04
-7573e-04
 Epoch 41/200
 7548/7548 [==============================] - 59s 8ms/step - loss: 1.5200 - categorical_accuracy: 0.5414 - val_loss: 1.4744 - val_categorical_accuracy: 0.5904 - lr: 6.6897e-04
 Epoch 42/200

@@ -9,9 +9,9 @@ import mediapipe as mp
 
 path = os.getcwd()
 try:
-    dataset_path = path[:path.rindex('/')] + '/Datasets/SLOVO_sign_dataset/slovo/letters/'
+    dataset_path = path[:path.rindex('/')] + '/Datasets/SLOVO_sign_dataset/slovo_cropped_mediapipe/letters/'
 except:
-    dataset_path = path[:path.rindex('\\')] + '\\Datasets\\SLOVO_sign_dataset\\slovo\\letters\\'
+    dataset_path = path[:path.rindex('\\')] + '\\Datasets\\SLOVO_sign_dataset\\slovo_cropped_mediapipe\\letters\\'
 
 data = gesture_recognizer.Dataset.from_folder(
     dirname=dataset_path,
@@ -20,9 +20,9 @@ data = gesture_recognizer.Dataset.from_folder(
 
 train_data, rest_data = data.split(0.8)
 validation_data, test_data = rest_data.split(0.5)
-epochs=1000
+epochs=500
 delegate=mp.tasks.BaseOptions.Delegate.GPU
-hparams = gesture_recognizer.HParams(export_dir=os.path.join("gesture_recognizer", f"model_{epochs}epochs"), epochs=epochs)
+hparams = gesture_recognizer.HParams(export_dir=os.path.join("gesture_recognizer", f"model_clean_cropped_mediapipe_{epochs}epochs"), epochs=epochs)
 options = gesture_recognizer.GestureRecognizerOptions(hparams=hparams)
 model = gesture_recognizer.GestureRecognizer.create(
     train_data=train_data,
