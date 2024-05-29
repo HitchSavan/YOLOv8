@@ -1,5 +1,5 @@
 import os
-from time import time
+import time
 import cv2
 import mediapipe as mp
 import numpy as np
@@ -81,17 +81,17 @@ class MovementVector:
 
             np_argcoses = np.array(self.argcoses_means)
             
-            # movement_label = 'straight' if np_argcoses.mean() > 0.94 else ''
-            # movement_label = 'circle' if (np.any(np.where(np_argcoses > 0.7)) and movement_label == '') else movement_label
+            movement_label = 'straight' if np_argcoses.mean() > 0.94 else ''
+            movement_label = 'circle' if (np.any(np.where(np_argcoses > 0.7)) and movement_label == '') else movement_label
 
-            # image = cv2.putText(image, movement_label, (50, 150), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2, cv2.LINE_AA)
+            image = cv2.putText(image, movement_label, (50, 150), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2, cv2.LINE_AA)
         
         return image
 
 
 class GestureRecognizerLiveStream:
     cur_threads_amount = 0
-    MAX_THREADS_AMOUNT = 10
+    MAX_THREADS_AMOUNT = 5
 
     def __init__(self):
         self.word_builder = WordBuilder()
@@ -159,7 +159,7 @@ class GestureRecognizerLiveStream:
                         int(sum([coord * height for coord in y_coordinates])/len([coord * height for coord in y_coordinates])))
             
         # FPS
-        timestamp = time()
+        timestamp = time.time()
         fps = f'{int(1/(timestamp - self.prev_timestamp))}'
         self.prev_timestamp = timestamp
         print(f'FPS: {fps}')
@@ -178,7 +178,7 @@ class GestureRecognizerLiveStream:
 
     def gesture_recognizer_init(self, path):
 
-        epochs = 200
+        epochs = 'clean_cropped_mediapipe_500'
 
         model_path = os.path.join(path, 'gesture_recognizer', f'model_{epochs}epochs', 'gesture_recognizer.task')
 
@@ -211,8 +211,6 @@ if __name__ == '__main__':
 
     path = os.getcwd()
 
-    prev_timestamp = time()
-
     print('Opening camera...')
     vid = cv2.VideoCapture(0)
 
@@ -223,8 +221,6 @@ if __name__ == '__main__':
     timestamp = 0
     with GestureRecognizer.create_from_options(options) as recognizer:
         while(True):
-
-            print(timestamp, '\n')
             # Capture the video frame by frame
             ret, frame = vid.read()
 
@@ -239,8 +235,21 @@ if __name__ == '__main__':
             recognizer.recognize_async(mp_image, timestamp)
             timestamp += 1
 
+            key = cv2.waitKey(1)
+            # the 'd' button is backspace button
+            if key == ord('d'):
+                gest_recogn.word_builder.backspace()
+            # the 'e' button is erase word button
+            if key == ord('e'):
+                gest_recogn.word_builder.erase()
+            # the 'q' button is add current letter button
+            elif key == ord('a'):
+                gest_recogn.word_builder.add_last_letter()
+            # the spacebar button is add space character button
+            elif key == ord(' '):
+                gest_recogn.word_builder.addSpace()
             # the 'q' button is quitting button
-            if cv2.waitKey(1) & 0xFF == ord('q'):
+            elif key == ord('q'):
                 # After the loop release the cap object
                 vid.release()
                 cv2.destroyAllWindows()

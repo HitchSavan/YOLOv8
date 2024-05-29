@@ -103,8 +103,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env*
-.venv*
+*env*
 env_ubu
 env/
 venv/

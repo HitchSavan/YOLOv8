@@ -42,6 +42,6 @@ CMAKE for OpenCV:
 	pkg-config --modversion opencv4
 	cd /usr/local/lib/python3.10/dist-packages/cv2/python-3.10
 	sudo mv cv2.cpython-310-x86_64-linux-gnu.so cv2.so
-	cd "/media/hitchsavan/старый_поц_с_буфером_обмена_8_мб/projects/hand_detection/gesture_recognition/.ubuEnv/lib/python3.10/site-packages"
+	cd "/media/hitchsavan/старый_поц_буф_8_мб/projects/hand_detection/gesture_recognition/.venv/lib/python3.10/site-packages"
 	//_____ remove all installed cv2 and contribs via pip _____//
 	ln -s /usr/local/lib/python3.10/dist-packages/cv2/python-3.10/cv2.so cv2.so
