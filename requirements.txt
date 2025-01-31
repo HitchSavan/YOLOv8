@@ -1,19 +1,23 @@
 # Ultralytics requirements
 # Usage: pip install -r requirements.txt
+# works only with opencv-python==4.3.0.36 or CUDA rebuilded
 
 # Base ----------------------------------------
-# Additionally install CUDA v11.7
-matplotlib>=3.2.2
-# numpy>=1.24.3
-opencv-python>=4.6.0
-Pillow>=7.1.2
-PyYAML>=5.3.1
-requests>=2.31.0
-torch>=2.0.1
-torchvision>=0.8.1
-tqdm>=4.64.0
+# Additionally install CUDA v12.1
+torch
+torchvision
+torchaudio
 mediapipe_model_maker
 ultralytics
+tensorflow-addons[tensorflow]
+# matplotlib>=3.2.2
+# numpy>=1.24.3
+# Pillow>=7.1.2
+# PyYAML>=5.3.1
+# requests>=2.31.0
+# torch>=2.0.1
+# torchvision>=0.8.1
+# tqdm>=4.64.0
 
 # Logging -------------------------------------
 # tensorboard>=2.4.1
@@ -21,8 +25,8 @@ ultralytics
 # comet
 
 # Plotting ------------------------------------
-pandas>=1.1.4
-seaborn>=0.11.0
+# pandas>=1.1.4
+# seaborn>=0.11.0
 
 # Export --------------------------------------
 # coremltools>=6.0  # CoreML export
@@ -37,8 +41,8 @@ seaborn>=0.11.0
 # openvino-dev>=2022.3  # OpenVINO export
 
 # Extras --------------------------------------
-psutil  # system utilization
-thop>=0.1.1  # FLOPs computation
+# psutil  # system utilization
+# thop>=0.1.1  # FLOPs computation
 # ipython  # interactive notebook
 # albumentations>=1.0.3
 # pycocotools>=2.0.6  # COCO mAP

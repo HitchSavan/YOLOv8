@@ -2,11 +2,11 @@ import sys
 import os
 
 path = os.getcwd()
-sys.path.insert(0, f'{path}\\hand_detector')
-sys.path.insert(0, f'{path}\\gesture_tracker')
+sys.path.insert(0, os.path.join(path, 'hand_detector'))
+sys.path.insert(0, os.path.join(path, 'gesture_tracker'))
 
-from yolo_detect import *
-from GestureTrackingModule_LiveStream import *
+from hand_detector.yolo_detect import *
+from gesture_tracker.GestureTrackingModule_LiveStream import *
 
 path = os.getcwd()
 

@@ -1,188 +1,211 @@
-import math
 import os
-from time import sleep, time
-
+import time
 import cv2
 import mediapipe as mp
-from matplotlib import pyplot as plt
+import numpy as np
+from collections import deque
+from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
+from mediapipe.tasks import python 
+from mediapipe.tasks.python import vision
+import sys
 
-plt.ion()
+sys.path.append(os.path.join('..', 'gesture_recognition', 'utils'))
 
-plt.switch_backend('agg')
+from movement_vector import Vector
+from word_builder import WordBuilder
 
-fig, ax = plt.subplots()
+Q = deque(maxlen=15)
+class MovingAverageFilter:
+    def __init__(self):
+        self.labels = deque(maxlen=Q.maxlen)
+        self.labels_dict = {}
+        self.labels_score_dict = {}
 
-plt.rcParams.update({
-    'axes.spines.top': False,
-    'axes.spines.right': False,
-    'axes.spines.left': False,
-    'axes.spines.bottom': False,
-    'xtick.labelbottom': False,
-    'xtick.bottom': False,
-    'ytick.labelleft': False,
-    'ytick.left': False,
-    'xtick.labeltop': False,
-    'xtick.top': False,
-    'ytick.labelright': False,
-    'ytick.right': False
-})
+    def process_filter(self, letter, score):
+        self.labels.append(letter)
 
-mp_hands = mp.solutions.hands
-mp_drawing = mp.solutions.drawing_utils
-mp_drawing_styles = mp.solutions.drawing_styles
+        if not self.labels_score_dict.__contains__(letter):
+            self.labels_score_dict[letter] = score
+        else:
+            self.labels_score_dict[letter] += score
 
-def display_image(data, result, fig, ax):
-    ax.imshow(data)
-    print('2')
-    fig.canvas.draw()
-    print('3')
-    fig.canvas.flush_events()
-    print('4')
-    #sleep(0.01)
-    print('5')
-    plt.cla()
+        unique, counts = np.unique(self.labels, return_counts=True)
+        labels_dict = dict(zip(unique, counts))
 
-def display_image_with_gestures_and_hand_landmarks(image, result):
-    """Displays a batch of images with the gesture category and its score along with the hand landmarks."""
-    # Images and labels.
-    image = image.numpy_view()
+        Q.append(self.labels_score_dict[letter] / labels_dict[letter])
 
-    # Auto-squaring: this will drop data that does not fit into square or square-ish rectangle.
-    rows = 1
-    cols = 1
-
-    # Size and spacing.
-    FIGSIZE = 13.0
-    SPACING = 0.1
-    subplot=(rows, cols, 1)
-    
-    dynamic_titlesize = FIGSIZE*SPACING/max(rows, cols) * 40 + 3
-
-    fig = plt.figure(figsize=(FIGSIZE, FIGSIZE))
-    
-    if result:
-        gestures, multi_hand_landmarks_list = result
-    else:
-        title = 'No hand detected'
-        titlesize = dynamic_titlesize
-
-        """Displays one image along with the predicted category name and score."""
-        plt.subplot(*subplot)
+        results = np.array(Q)
+        i = np.argmax(results)
         
-        if len(title) > 0:
-            plt.title(title, fontsize=int(titlesize), color='black', fontdict={'verticalalignment':'center'}, pad=int(titlesize/1.5))
-         
-        subplot = (subplot[0], subplot[1], subplot[2]+1)
-        # Layout.
-        plt.tight_layout()
-        plt.subplots_adjust(wspace=SPACING, hspace=SPACING)
+        result_letter = self.labels[i]
 
-        fig.canvas.draw()
-        fig.canvas.flush_events()
-        sleep(0.1)
-        plt.cla()
-
-        return 0
-
-
-    # Display gestures and hand landmarks.
-    title = f"{gestures.category_name} ({gestures.score:.2f})"
-    annotated_image = image.copy()
-
-    for hand_landmarks in multi_hand_landmarks_list[0]:
-        hand_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
-        hand_landmarks_proto.landmark.extend([
-            landmark_pb2.NormalizedLandmark(x=landmark.x, y=landmark.y, z=landmark.z) for landmark in hand_landmarks])
-
-        mp_drawing.draw_landmarks(
-            annotated_image,
-            hand_landmarks_proto,
-            mp_hands.HAND_CONNECTIONS,
-            mp_drawing_styles.get_default_hand_landmarks_style(),
-            mp_drawing_styles.get_default_hand_connections_style())
-
-    image = annotated_image
-    titlesize = dynamic_titlesize
-
-    """Displays one image along with the predicted category name and score."""
-    plt.subplot(*subplot)
+        return result_letter
     
-    if len(title) > 0:
-        plt.title(title, fontsize=int(titlesize), color='black', fontdict={'verticalalignment':'center'}, pad=int(titlesize/1.5))
-         
-    subplot = (subplot[0], subplot[1], subplot[2]+1)
+class MovementVector:
+    def __init__(self):
+        buffer_size = 6
+        self.movement_buffer = deque(maxlen=buffer_size)
+        self.movement_frames_loss = 0
+        self.vectors = deque(maxlen=Q.maxlen-1)
+        self.argcoses_means = deque(maxlen=Q.maxlen)
 
-    # Layout.
-    plt.tight_layout()
-    plt.subplots_adjust(wspace=SPACING, hspace=SPACING)
+    def process_movement_vectors(self, image, position):
+        if position is not None:
+            self.movement_buffer.append(position)
+            self.movement_frames_loss = 0
 
-    fig.canvas.draw()
-    fig.canvas.flush_events()
-    sleep(0.1)
-    plt.cla()
+        else:
+            self.movement_frames_loss += 1
 
-def gesture_recognizer_init(path):
-    print("Loading gesture detection model...")
-    try:
-        model_path = f'{path}/gesture_recognizer/model/gesture_recognizer.task'
-    except:
-        model_path = f'{path}\\gesture_recognizer\\model\\gesture_recognizer.task'
+        if self.movement_frames_loss > 3 and len(self.movement_buffer):
+            self.movement_buffer.clear()
+            self.vectors.clear()
 
-    MARGIN = 10  # pixels
-    FONT_SIZE = 1
-    FONT_THICKNESS = 1
-    HANDEDNESS_TEXT_COLOR = (0, 255, 255) # RGB
-    gest_format = (MARGIN, FONT_SIZE, HANDEDNESS_TEXT_COLOR, FONT_THICKNESS)
+        if len(self.movement_buffer) > 1:
+            for pos in range(1, len(self.movement_buffer)):
+                self.vectors.append(Vector(self.movement_buffer[pos-1][0],
+                                                          self.movement_buffer[pos-1][1],
+                                                          self.movement_buffer[pos][0],
+                                                          self.movement_buffer[pos][1]))
 
-    BaseOptions = mp.tasks.BaseOptions
-    GestureRecognizer = mp.tasks.vision.GestureRecognizer
-    GestureRecognizerOptions = mp.tasks.vision.GestureRecognizerOptions
-    GestureRecognizerResult = mp.tasks.vision.GestureRecognizerResult
-    VisionRunningMode = mp.tasks.vision.RunningMode
-    
-    # Create a gesture recognizer instance with the live stream mode:
-    def print_result(result: GestureRecognizerResult, output_image: mp.Image, timestamp_ms: int):
+        if len(self.argcoses_means):
+            self.argcoses_means.clear()
+
+        if len(self.vectors) > 0:
+            for i, vector in enumerate(self.vectors):
+                vector.draw(image, (255, 0, 0), 3)
+                if i > 0 and self.vectors[i-1].length() > 4 and vector.length() > 4:
+                    prev_vector = self.vectors[i-1]
+                    self.argcoses_means.append(prev_vector.getCos(vector))
+
+            np_argcoses = np.array(self.argcoses_means)
+            
+            movement_label = 'straight' if np_argcoses.mean() > 0.94 else ''
+            movement_label = 'circle' if (np.any(np.where(np_argcoses > 0.7)) and movement_label == '') else movement_label
+
+            image = cv2.putText(image, movement_label, (50, 150), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2, cv2.LINE_AA)
         
-        # font
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        # org
-        org = (50, 50)
-        # fontScale
-        fontScale = 1
-        # Yellow color in BGR
-        color = (0, 255, 255)
-        # Line thickness of 2 px
-        thickness = 2
+        return image
 
-        #output_image = cv2.putText(output_image, str(result), org, font, fontScale, color, thickness, cv2.LINE_AA)
 
+class GestureRecognizerLiveStream:
+    cur_threads_amount = 0
+    MAX_THREADS_AMOUNT = 5
+
+    def __init__(self):
+        self.word_builder = WordBuilder()
+        self.average_filter = MovingAverageFilter()
+        self.movement_vector = MovementVector()
+
+        self.mp_hands = mp.solutions.hands
+        self.mp_drawing = mp.solutions.drawing_utils
+        self.mp_drawing_styles = mp.solutions.drawing_styles
+
+        self.prev_timestamp = 0.0
+
+    def display_image_with_gestures_and_hand_landmarks(self, image, result):
+        MARGIN = 10  # pixels
+        FONT_SIZE = 1
+        FONT_THICKNESS = 1
+        HANDEDNESS_TEXT_COLOR = (0, 255, 255) # RGB
         try:
             print(f'gesture recognition result: Accuracy: {result.gestures[0][0].score}, letter: {result.gestures[0][0].category_name}')
-            results = (result.gestures[0][0], result.hand_landmarks)
+            letter = result.gestures[0][0].category_name
+            score = result.gestures[0][0].score
         except:
             print('No hands detected')
-            results = ()
+            letter = ''
+            score = 0
 
-        global fig
-        global ax
+        
+        hand_landmarks_list = result.hand_landmarks
+        handedness_list = result.handedness
+        
+        annotated_image = np.copy(image)
 
-        # Display the result
-        display_image_with_gestures_and_hand_landmarks(output_image, results)
+        position = None
 
-    options = GestureRecognizerOptions(
-        base_options=BaseOptions(model_asset_path=model_path),
-        running_mode=VisionRunningMode.LIVE_STREAM,
-        result_callback=print_result)
-    
-    return (GestureRecognizer, options)
+        # Loop through the detected hands to visualize.
+        for idx in range(len(hand_landmarks_list)):
+            hand_landmarks = hand_landmarks_list[idx]
+            handedness = handedness_list[idx]
 
-def recognize_gesture(recognizer, frame):
-    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
-    timestamp = int(time() * 1000)
-    
-    recognizer.recognize_async(mp_image, timestamp)
+            # Draw the hand landmarks.
+            hand_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
+            hand_landmarks_proto.landmark.extend([
+                landmark_pb2.NormalizedLandmark(x=landmark.x, y=landmark.y, z=landmark.z) for landmark in hand_landmarks
+            ])
+            solutions.drawing_utils.draw_landmarks(
+                annotated_image,
+                hand_landmarks_proto,
+                solutions.hands.HAND_CONNECTIONS,
+                solutions.drawing_styles.get_default_hand_landmarks_style(),
+                solutions.drawing_styles.get_default_hand_connections_style())
 
+            # Get the top left corner of the detected hand's bounding box.
+            height, width, _ = annotated_image.shape
+            x_coordinates = [landmark.x for landmark in hand_landmarks]
+            y_coordinates = [landmark.y for landmark in hand_landmarks]
+            text_x = int(min(x_coordinates) * width)
+            text_y = int(min(y_coordinates) * height) - MARGIN
+
+            # Draw handedness (left or right hand) on the image.
+            cv2.putText(annotated_image, f"{handedness[0].category_name}",
+                        (text_x, text_y), cv2.FONT_HERSHEY_DUPLEX,
+                        FONT_SIZE, HANDEDNESS_TEXT_COLOR, FONT_THICKNESS, cv2.LINE_AA)
+            
+            position = (int(sum([coord * width for coord in x_coordinates])/len([coord * width for coord in x_coordinates])),
+                        int(sum([coord * height for coord in y_coordinates])/len([coord * height for coord in y_coordinates])))
+            
+        # FPS
+        timestamp = time.time()
+        fps = f'{int(1/(timestamp - self.prev_timestamp))}'
+        self.prev_timestamp = timestamp
+        print(f'FPS: {fps}')
+        annotated_image = cv2.putText(annotated_image, fps, (50, 50), cv2.FONT_HERSHEY_COMPLEX, 
+                                    1, (0, 255, 255), 2, cv2.LINE_AA)
+
+        result_letter = self.average_filter.process_filter(letter, score)
+        annotated_image = self.movement_vector.process_movement_vectors(annotated_image, position)
+
+        annotated_image = cv2.putText(annotated_image, result_letter, (50, 100), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2, cv2.LINE_AA)
+        annotated_image = cv2.putText(annotated_image,
+                                      self.word_builder.addLetter(result_letter) if result_letter != 'none' else self.word_builder.getCurWord(),
+                                      (50, annotated_image.shape[0]-50), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255), 2, cv2.LINE_AA)
+        GestureRecognizerLiveStream.cur_threads_amount -= 1
+        cv2.imshow('frame', annotated_image)
+
+    def gesture_recognizer_init(self, path):
+
+        epochs = 'clean_cropped_mediapipe_500'
+
+        model_path = os.path.join(path, 'gesture_recognizer', f'model_{epochs}epochs', 'gesture_recognizer.task')
+
+        MARGIN = 10  # pixels
+        FONT_SIZE = 1
+        FONT_THICKNESS = 1
+        HANDEDNESS_TEXT_COLOR = (0, 255, 255) # RGB
+        gest_format = (MARGIN, FONT_SIZE, HANDEDNESS_TEXT_COLOR, FONT_THICKNESS)
+
+        BaseOptions = mp.tasks.BaseOptions
+        GestureRecognizer = mp.tasks.vision.GestureRecognizer
+        GestureRecognizerOptions = mp.tasks.vision.GestureRecognizerOptions
+        GestureRecognizerResult = mp.tasks.vision.GestureRecognizerResult
+        VisionRunningMode = mp.tasks.vision.RunningMode
+
+        # Create a gesture recognizer instance with the live stream mode:
+        def print_result(result: GestureRecognizerResult, output_image: mp.Image, timestamp_ms: int): # type: ignore
+            # Display the result
+            self.display_image_with_gestures_and_hand_landmarks(output_image.numpy_view(), result)
+
+        options = GestureRecognizerOptions(
+            base_options=BaseOptions(delegate=BaseOptions.Delegate.GPU, model_asset_path=model_path),
+            running_mode=VisionRunningMode.LIVE_STREAM,
+            result_callback=print_result,
+            num_hands=2)
+
+        return (GestureRecognizer, options, gest_format)
 
 if __name__ == '__main__':
 
@@ -191,20 +214,43 @@ if __name__ == '__main__':
     print('Opening camera...')
     vid = cv2.VideoCapture(0)
 
-    GestureRecognizer, options = gesture_recognizer_init(path)
+    gest_recogn = GestureRecognizerLiveStream()
 
+    GestureRecognizer, options, gest_format = gest_recogn.gesture_recognizer_init(path)
+
+    timestamp = 0
     with GestureRecognizer.create_from_options(options) as recognizer:
         while(True):
             # Capture the video frame by frame
             ret, frame = vid.read()
 
-            recognize_gesture(recognizer, frame)
-            
-            # the 'q' button is quitting button
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+            if not ret:
+                continue
 
-        # After the loop release the cap object
-        vid.release()
-        # Destroy all the windows
-        cv2.destroyAllWindows()
+            mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
+
+            while (GestureRecognizerLiveStream.cur_threads_amount > GestureRecognizerLiveStream.MAX_THREADS_AMOUNT):
+                time.sleep(0.01)
+            GestureRecognizerLiveStream.cur_threads_amount += 1
+            recognizer.recognize_async(mp_image, timestamp)
+            timestamp += 1
+
+            key = cv2.waitKey(1)
+            # the 'd' button is backspace button
+            if key == ord('d'):
+                gest_recogn.word_builder.backspace()
+            # the 'e' button is erase word button
+            if key == ord('e'):
+                gest_recogn.word_builder.erase()
+            # the 'q' button is add current letter button
+            elif key == ord('a'):
+                gest_recogn.word_builder.add_last_letter()
+            # the spacebar button is add space character button
+            elif key == ord(' '):
+                gest_recogn.word_builder.addSpace()
+            # the 'q' button is quitting button
+            elif key == ord('q'):
+                # After the loop release the cap object
+                vid.release()
+                cv2.destroyAllWindows()
+                exit()

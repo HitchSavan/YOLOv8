@@ -14,13 +14,13 @@ def yolo_init(path):
     org = (50, 50)
     # fontScale
     fontScale = 1
-    # Yellow color in BGR
+    # Blue color in BGR
     color = (0, 255, 255)
     # Line thickness of 2 px
     thickness = 2
 
     # Load a custom model
-    model = YOLO(f'{path}/hand_detector/yolov8{nnsize}.pt')
+    model = YOLO(os.path.join(path, 'data', f'yolov8{nnsize}.pt'))
 
     return (model, org, font, fontScale, color, thickness)
 
